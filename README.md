@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.2 · octubre 2026
+Versión 3.3 · octubre 2026
 
 ## Cómo abrirla
 
@@ -78,7 +78,7 @@ reconocimiento-venezuela/
 ├── sw.js                   Modo sin conexión (guarda la app y los mapas ya vistos)
 ├── manifest.webmanifest    Datos para instalar la app
 ├── vercel.json             Configuración de publicación en Vercel
-├── iconos/                 Íconos de la app
+├── iconos/                 Logotipo (logo.svg) e íconos de la app
 ├── Iniciar (Windows).bat   Lanzador de Windows (usa servidor.ps1)
 ├── servidor.ps1            Servidor local para Windows, sin instalar nada
 ├── Iniciar (Mac).command   Lanzador de Mac
@@ -99,3 +99,5 @@ Hace falta internet para consultar datos nuevos. Sin conexión se abre la app co
 - Para publicar un cambio: `git add -A`, `git commit -m "..."` y `git push`. Vercel lo publica solo.
 - Los lugares destacados están en `FEATURED`, en `js/nucleo.js`.
 - Las categorías de Mis lugares están en `MYCATS`, en `js/mis-lugares.js`.
+- Los colores están al inicio de `css/estilos.css` (modo claro y oscuro). El verde del botón Analizar es `--go`.
+- Si cambias `iconos/logo.svg`, vuelve a generar los PNG de `iconos/` con el mismo dibujo.

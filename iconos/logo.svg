@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Reconocimiento Venezuela">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f8f"/><stop offset="1" stop-color="#0b1e38"/></linearGradient>
+    <clipPath id="r"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <path d="M-10 420 L120 300 L190 360 L300 240 L420 350 L522 290 L522 522 L-10 522Z" fill="#2563c9" opacity=".55"/>
+    <path d="M-10 470 L90 380 L170 430 L270 340 L360 410 L440 360 L522 410 L522 522 L-10 522Z" fill="#0a1628" opacity=".9"/>
+    <g fill="none" stroke="#f2a900" stroke-width="26" stroke-linecap="round">
+      <circle cx="256" cy="214" r="104"/>
+      <path d="M256 70v62M256 296v62M112 214h62M338 214h62"/>
+    </g>
+    <circle cx="256" cy="214" r="26" fill="#22c55e"/>
+  </g>
+</svg>

@@ -6,34 +6,34 @@
 const REP_COLORS = { puente: "#c2410c", agua: "#1d6fd1", naturaleza: "#2f8a3c", estructura: "#6b4fa3", interes: "#b7791f", servicio: "#c22f4f" };
 const REP_LEVEL = [null, { t: "BAJO", c: "#2f8a3c" }, { t: "MODERADO", c: "#b7791f" }, { t: "ALTO", c: "#c22f4f" }];
 const REP_CSS = `
-.rep { --c-naturaleza: #2f8a3c; --line: #d3dedb; --muted: #56706b; font: 14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; color: #15201e; }
+.rep { --c-naturaleza: #2f8a3c; --line: #dbe3ee; --muted: #5b6b80; font: 14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; color: #0f1c2e; }
 .rep h1 { font: 700 22px/1.2 "Sora", "Trebuchet MS", sans-serif; margin: 6px 0 2px; letter-spacing: -.01em; }
-.rep h2 { font: 700 15px "Sora", "Trebuchet MS", sans-serif; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #15201e; text-transform: uppercase; letter-spacing: .04em; break-after: avoid; }
-.rep h3 { font: 600 13px "Sora", sans-serif; margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .05em; color: #56706b; }
+.rep h2 { font: 700 15px "Sora", "Trebuchet MS", sans-serif; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #0f1c2e; text-transform: uppercase; letter-spacing: .04em; break-after: avoid; }
+.rep h3 { font: 600 13px "Sora", sans-serif; margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .05em; color: #5b6b80; }
 .rep p { margin: 4px 0; }
-.rep .cls { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 600 11px "IBM Plex Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; border: 1.5px solid #15201e; padding: 5px 8px; }
+.rep .cls { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 600 11px "IBM Plex Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; border: 1.5px solid #0f1c2e; padding: 5px 8px; }
 .rep .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 4px 16px; margin: 10px 0 0; font-size: 13px; }
 .rep .meta b, .rep .mono { font-family: "IBM Plex Mono", Consolas, monospace; font-weight: 500; }
 .rep table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 13px; break-inside: auto; }
-.rep th, .rep td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #d3dedb; vertical-align: top; }
-.rep th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #56706b; font-weight: 600; }
+.rep th, .rep td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #dbe3ee; vertical-align: top; }
+.rep th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #5b6b80; font-weight: 600; }
 .rep td.n { text-align: right; font-family: "IBM Plex Mono", Consolas, monospace; white-space: nowrap; }
 .rep tr { break-inside: avoid; }
 .rep ul { margin: 4px 0; padding-left: 18px; }
 .rep li { margin: 3px 0; }
 .rep .lvl { display: inline-block; min-width: 76px; text-align: center; padding: 1px 8px; border-radius: 4px; color: #fff; font: 700 11px "IBM Plex Mono", Consolas, monospace; letter-spacing: .06em; }
-.rep .box { border: 1px solid #d3dedb; border-radius: 6px; padding: 10px 12px; margin: 8px 0; break-inside: avoid; }
+.rep .box { border: 1px solid #dbe3ee; border-radius: 6px; padding: 10px 12px; margin: 8px 0; break-inside: avoid; }
 .rep .global { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .rep .two { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; break-inside: avoid; }
 .rep .two svg { width: 100%; height: auto; display: block; border-radius: 6px; }
 .rep .prof { width: 100%; height: 110px; display: block; }
 .rep .sketch { width: 100%; max-width: 440px; height: auto; display: block; margin: 0 auto; }
-.rep .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12px; color: #56706b; margin-top: 4px; }
+.rep .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12px; color: #5b6b80; margin-top: 4px; }
 .rep .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
-.rep .note { font-size: 12px; color: #56706b; }
+.rep .note { font-size: 12px; color: #5b6b80; }
 .rep .keep { break-inside: avoid; }
-.rep .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 28px; font-size: 12px; color: #56706b; }
-.rep .sign div { border-top: 1px solid #15201e; padding-top: 4px; }
+.rep .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 28px; font-size: 12px; color: #5b6b80; }
+.rep .sign div { border-top: 1px solid #0f1c2e; padding-top: 4px; }
 @media (max-width: 600px) { .rep .two { grid-template-columns: 1fr; } .rep .two svg { max-width: 240px; } }
 @media print { .rep h2 { break-after: avoid; } .rep .box, .rep .two { break-inside: avoid; } }
 `;
@@ -82,7 +82,7 @@ function dtg(date = new Date()) { // grupo fecha-hora, hora de Venezuela (UTC-4,
 }
 const nearestFeat = pred => S.feats.find(pred) || null; // S.feats ya viene ordenado por distancia
 const where = f => `${fmtDist(f.d)} al ${rumbo(bearing(S.point, f))}`;
-const lvlTag = n => n ? `<span class="lvl" style="background:${REP_LEVEL[n].c}">${REP_LEVEL[n].t}</span>` : `<span class="lvl" style="background:#8a9a97">SIN DATO</span>`;
+const lvlTag = n => n ? `<span class="lvl" style="background:${REP_LEVEL[n].c}">${REP_LEVEL[n].t}</span>` : `<span class="lvl" style="background:#8a98ab">SIN DATO</span>`;
 
 function assessRisks() {
   const t = S.terrain, w = S.weather, g = S.ground, r = [];
@@ -165,15 +165,15 @@ function sketchSVG() {
   const bar = R / 2, bx = 16, by = W - 16;
   return `<svg class="sketch" viewBox="0 0 ${W} ${W}" role="img" aria-label="Croquis del área">
     <defs><clipPath id="repClip"><circle cx="${C}" cy="${C}" r="${C - 18}"/></clipPath></defs>
-    <rect width="${W}" height="${W}" fill="#f6f8f7"/>
-    <circle cx="${C}" cy="${C}" r="${C - 18}" fill="#fff" stroke="#15201e" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <circle cx="${C}" cy="${C}" r="${(C - 18) / 2}" fill="none" stroke="#c9d3d0" stroke-dasharray="2 4"/>
+    <rect width="${W}" height="${W}" fill="#f3f6fb"/>
+    <circle cx="${C}" cy="${C}" r="${C - 18}" fill="#fff" stroke="#0f1c2e" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <circle cx="${C}" cy="${C}" r="${(C - 18) / 2}" fill="none" stroke="#cdd6e3" stroke-dasharray="2 4"/>
     <g clip-path="url(#repClip)">${roads}${lines}${dots}</g>
-    <circle cx="${C}" cy="${C}" r="7" fill="#d99a06" stroke="#15201e" stroke-width="2"/>
-    <path d="M${W - 26},14 l7,18 l-7,-5 l-7,5z" fill="#15201e"/><text x="${W - 26}" y="46" font-size="12" font-weight="700" text-anchor="middle" fill="#15201e">N</text>
-    <line x1="${bx}" x2="${bx + bar * k}" y1="${by}" y2="${by}" stroke="#15201e" stroke-width="3"/>
-    <text x="${bx}" y="${by - 6}" font-size="11" fill="#15201e">${fmtDist(bar)}</text>
-    <text x="${C + (C - 18) / 2 + 3}" y="${C - 3}" font-size="10" fill="#8a9a97">${fmtDist(R / 2)}</text></svg>`;
+    <circle cx="${C}" cy="${C}" r="7" fill="#d99a06" stroke="#0f1c2e" stroke-width="2"/>
+    <path d="M${W - 26},14 l7,18 l-7,-5 l-7,5z" fill="#0f1c2e"/><text x="${W - 26}" y="46" font-size="12" font-weight="700" text-anchor="middle" fill="#0f1c2e">N</text>
+    <line x1="${bx}" x2="${bx + bar * k}" y1="${by}" y2="${by}" stroke="#0f1c2e" stroke-width="3"/>
+    <text x="${bx}" y="${by - 6}" font-size="11" fill="#0f1c2e">${fmtDist(bar)}</text>
+    <text x="${C + (C - 18) / 2 + 3}" y="${C - 3}" font-size="10" fill="#8a98ab">${fmtDist(R / 2)}</text></svg>`;
 }
 
 // ---------- Documento ----------
@@ -326,11 +326,11 @@ const BRIEF_CSS = `
 .rep .page2 { break-before: page; }
 .rep .apr p { margin: 0 0 6px; text-align: justify; }
 .rep .apr b.t { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
-.rep .verdict { border: 2px solid #15201e; border-radius: 6px; padding: 8px 12px; margin-top: 8px; break-inside: avoid; }
+.rep .verdict { border: 2px solid #0f1c2e; border-radius: 6px; padding: 8px 12px; margin-top: 8px; break-inside: avoid; }
 .rep .verdict .lvl { font-size: 12px; padding: 2px 10px; }
 .rep .sheet-tag { display: none; }
-@media screen { .rep .page2 { margin-top: 26px; padding-top: 18px; border-top: 2px dashed #c9d3d0; position: relative; }
-  .rep .sheet-tag { display: block; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px; font: 600 11px "IBM Plex Mono", monospace; color: #8a9a97; } }
+@media screen { .rep .page2 { margin-top: 26px; padding-top: 18px; border-top: 2px dashed #cdd6e3; position: relative; }
+  .rep .sheet-tag { display: block; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px; font: 600 11px "IBM Plex Mono", monospace; color: #8a98ab; } }
 @media (max-width: 600px) { .rep .cols, .rep .cols2, .rep.brief .meta { grid-template-columns: 1fr; } .rep .cols .sketch { max-width: 300px; margin: 0 auto; } }
 `;
 document.head.insertAdjacentHTML("beforeend", `<style id="repBriefCss">${BRIEF_CSS}</style>`);
