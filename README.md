@@ -26,9 +26,9 @@ La app se publica en **Vercel** desde GitHub. Cada cambio que se sube a la rama 
 Primera vez:
 
 1. Entra a https://vercel.com/new e inicia sesión con tu cuenta de GitHub.
-2. En *Import Git Repository* elige `reconocimiento-venezuela` y pulsa **Import**.
+2. En *Import Git Repository* elige `Reconocimiento-de-Areas` y pulsa **Import**.
 3. Deja *Framework Preset* en **Other**, sin comando de build ni carpeta de salida, y pulsa **Deploy**.
-4. Vercel te da un enlace como `https://reconocimiento-venezuela.vercel.app`.
+4. Vercel te da un enlace como `https://reconocimiento-de-areas.vercel.app`.
 
 En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **Compartir → Agregar a inicio** (iPhone, Safari). Queda como una app con su ícono y abre sin conexión con los mapas que ya viste.
 
