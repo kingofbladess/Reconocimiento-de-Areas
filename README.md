@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.1 · octubre 2026
+Versión 3.2 · octubre 2026
 
 ## Cómo abrirla
 
@@ -44,7 +44,11 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
 - **Sismos** del último año en 300 km (USGS).
 - **Herramientas:** medir distancias con perfil del terreno, y capas Satélite, Mapa, Relieve y Sombras.
-- **Analizar:** el botón de la ficha reúne todo lo consultado en un **reporte operativo del área**: resumen ejecutivo con nivel de riesgo, situación geográfica y croquis, terreno, meteorología, movilidad y puentes, infraestructura y servicios, evaluación de riesgos, puntos de referencia, recomendaciones y fuentes. Se imprime o guarda como PDF, o se descarga como archivo HTML.
+- **Analizar:** el botón de la ficha reúne todo lo consultado en un **reporte operativo del área de dos hojas**:
+  - Hoja 1: identificación del punto, nivel de riesgo general, croquis, mapa de relieve, datos clave y evaluación de riesgos.
+  - Hoja 2: pronóstico de 72 h, movilidad y puentes, apoyo disponible y una **apreciación argumentada** (terreno, meteorología, movilidad, apoyo y riesgos) que concluye si el área es favorable, favorable con restricciones o desfavorable, con las recomendaciones principales.
+
+  El botón **Ver versión detallada** muestra el reporte completo de varias páginas. Ambos se imprimen o guardan como PDF, o se descargan como archivo HTML.
 - **Mis lugares:** guarda puntos con nombre, categoría, notas, fotos y PDF. Exporta e importa respaldos.
 
 El mapa resalta Venezuela y no acepta puntos fuera del país. El contorno viene de OpenStreetMap, que deja fuera la Guayana Esequiba.

@@ -40,7 +40,7 @@ const REP_CSS = `
 document.head.insertAdjacentHTML("beforeend", `<style id="repCss">${REP_CSS}</style>`);
 
 const REP_KEYS = ["info", "weather", "terrain", "ground", "feats", "quakes", "wiki", "photos"];
-const REP = { html: "", name: "" };
+const REP = { html: "", name: "", mode: "breve" }; // breve: dos hojas con apreciación; detallado: reporte completo
 async function waitForData(id, maxMs = 30000) {
   const t0 = Date.now();
   while (REP_KEYS.some(k => S.busy[k]) && Date.now() - t0 < maxMs && id === reqId) await sleep(400);
@@ -52,17 +52,22 @@ async function openReport() {
   $("#reportBody").innerHTML = `<div class="loading">Reuniendo la información del área… (terreno, clima, accesos, infraestructura y riesgos)</div>`;
   await waitForData(id);
   if (id !== reqId || $("#report").hidden) return;
-  REP.html = buildReport();
+  renderReport();
+}
+function renderReport() {
+  REP.html = REP.mode === "breve" ? buildBrief() : buildReport();
   $("#reportBody").innerHTML = REP.html;
+  $("#repMode").textContent = REP.mode === "breve" ? "Ver versión detallada" : "Ver versión de 2 hojas";
   $("#report .report-scroll").scrollTop = 0;
 }
+$("#repMode").addEventListener("click", () => { if (!REP.html) return; REP.mode = REP.mode === "breve" ? "detallado" : "breve"; renderReport(); });
 $("#repClose").addEventListener("click", () => { $("#report").hidden = true; });
 $("#repPrint").addEventListener("click", () => { if (REP.html) window.print(); });
 $("#repDownload").addEventListener("click", () => {
   if (!REP.html) return;
   const doc = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(REP.name)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<style>body{margin:0;background:#fff}.wrap{max-width:900px;margin:0 auto;padding:28px 24px}${REP_CSS}</style></head><body><div class="wrap">${REP.html}</div></body></html>`;
+<style>body{margin:0;background:#fff}.wrap{max-width:900px;margin:0 auto;padding:28px 24px}@media print{.wrap{padding:0;max-width:none}}${REP_CSS}${BRIEF_CSS}</style></head><body><div class="wrap">${REP.html}</div></body></html>`;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([doc], { type: "text/html" }));
   a.download = `${REP.name.replace(/[^\wáéíóúñü -]+/gi, "").replace(/\s+/g, "-").toLowerCase()}.html`;
@@ -245,7 +250,7 @@ function buildReport() {
 
   // 6. Infraestructura y servicios
   const KEY = [["Salud", f => ["hospital", "clinic", "pharmacy"].includes(f.tags.amenity)], ["Seguridad", f => ["police", "fire_station"].includes(f.tags.amenity)],
-    ["Combustible", f => f.tags.amenity === "fuel"], ["Aeródromo / helipuerto", f => f.tags.aeroway], ["Comunicaciones", f => /^(communications_tower|antenna|mast|tower)$/.test(f.tags.man_made)],
+    ["Combustible", f => f.tags.amenity === "fuel"], ["Aeródromo / helipuerto", f => f.tags.aeroway], ["Comunicaciones", isComms],
     ["Energía", f => f.tags.power], ["Agua (represas, tanques)", f => /^(dam|water_tower|storage_tank)$/.test(f.tags.man_made) || /^(dam|weir)$/.test(f.tags.waterway)],
     ["Educación / refugio", f => ["school", "university"].includes(f.tags.amenity)], ["Gobierno", f => f.tags.amenity === "townhall"]];
   const infra = S.errs.feats ? sinDato("infraestructura", S.errs.feats) : `<table><tr><th>Categoría</th><th>Más cercano</th><th>Distancia</th><th>Total en radio</th></tr>${KEY.map(([lab, pred]) => {
@@ -297,5 +302,151 @@ function buildReport() {
     ${sec(10, "Fuentes y limitaciones")}<table>${status("terrain", "Elevación (Open‑Meteo / Copernicus 90 m)")}${status("weather", "Meteorología (Open‑Meteo)")}${status("ground", "Uso del suelo y vías (OpenStreetMap)")}${status("feats", "Elementos del entorno (OpenStreetMap)")}${status("quakes", "Sismos (USGS)")}${status("info", "Información del lugar (Wikipedia / Wikidata)")}${status("wiki", "Lugares cercanos (Wikipedia)")}</table>
     <p class="note">Reporte generado automáticamente a partir de fuentes abiertas el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" })}. Los datos de OpenStreetMap y Wikipedia pueden estar incompletos o desactualizados y el modelo de elevación tiene resolución de 90 m: verificar en el terreno antes de tomar decisiones.</p>
     <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div>
+  </article>`;
+}
+
+// ---------- Versión de dos hojas con apreciación argumentada ----------
+const BRIEF_CSS = `
+@page { size: letter; margin: 12mm 13mm; }
+.rep.brief { font-size: 12px; line-height: 1.38; }
+.rep.brief h1 { font-size: 19px; margin: 4px 0 0; }
+.rep.brief h2 { font-size: 12.5px; margin: 12px 0 5px; padding-bottom: 2px; }
+.rep.brief h3 { font-size: 11px; margin: 6px 0 2px; }
+.rep.brief table { font-size: 11.5px; margin: 2px 0; }
+.rep.brief th, .rep.brief td { padding: 2.5px 5px; }
+.rep.brief .meta { font-size: 11.5px; margin-top: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rep.brief ul { margin: 2px 0; }
+.rep.brief li { margin: 1px 0; }
+.rep.brief .box { padding: 6px 10px; margin: 6px 0; }
+.rep .cols { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 14px; align-items: start; }
+.rep .cols2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.rep .cols .sketch { max-width: 250px; }
+.rep .mini { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; align-items: center; margin-top: 6px; }
+.rep .mini svg { width: 110px; height: auto; border-radius: 4px; }
+.rep .page2 { break-before: page; }
+.rep .apr p { margin: 0 0 6px; text-align: justify; }
+.rep .apr b.t { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+.rep .verdict { border: 2px solid #15201e; border-radius: 6px; padding: 8px 12px; margin-top: 8px; break-inside: avoid; }
+.rep .verdict .lvl { font-size: 12px; padding: 2px 10px; }
+.rep .sheet-tag { display: none; }
+@media screen { .rep .page2 { margin-top: 26px; padding-top: 18px; border-top: 2px dashed #c9d3d0; position: relative; }
+  .rep .sheet-tag { display: block; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px; font: 600 11px "IBM Plex Mono", monospace; color: #8a9a97; } }
+@media (max-width: 600px) { .rep .cols, .rep .cols2, .rep.brief .meta { grid-template-columns: 1fr; } .rep .cols .sketch { max-width: 300px; margin: 0 auto; } }
+`;
+document.head.insertAdjacentHTML("beforeend", `<style id="repBriefCss">${BRIEF_CSS}</style>`);
+
+const list = a => a.length <= 1 ? (a[0] || "") : `${a.slice(0, -1).join(", ")} y ${a[a.length - 1]}`;
+
+// Apreciación: argumenta en prosa cada factor a partir de los datos mostrados y cierra con una conclusión
+const isComms = f => /^(communications_tower|antenna|mast)$/.test(f.tags.man_made) || f.tags["tower:type"] === "communication";
+
+function appreciation(risks, rec) {
+  const t = S.terrain, w = S.weather, g = S.ground, out = [];
+  const R = fmtDist(S.radius);
+  if (t) {
+    const [cls] = terrainClass(t), pos = t.below >= 0.85 ? "ocupa una posición dominante sobre su entorno, lo que favorece la observación y las comunicaciones" : t.below <= 0.15 ? "se ubica en una zona deprimida respecto a su entorno, con menor visibilidad y tendencia a acumular agua" : "ocupa una posición intermedia respecto a su entorno";
+    const move = t.mean < 3 ? "el desplazamiento motorizado es viable en la mayor parte del área, incluso fuera de vías" : t.mean < 8 ? "el desplazamiento motorizado es viable, aunque conviene ceñirse a vías y trochas existentes" : t.mean < 15 ? "el desplazamiento motorizado queda limitado a las vías existentes y fuera de ellas exige vehículos 4x4 o marcha a pie" : "el desplazamiento fuera de vías se restringe a la marcha a pie, con rendimientos bajos";
+    out.push(`<b class="t">Del terreno.</b> El área corresponde a ${cls.toLowerCase()}, con altitudes entre ${fmtNum(Math.round(t.mn))} y ${fmtNum(Math.round(t.mx))} m (desnivel de ${fmtNum(Math.round(t.relief))} m) y pendiente media de ${t.mean.toFixed(0)}°. El punto, a ${fmtNum(Math.round(t.e0))} m, ${pos}. En consecuencia, ${move}.${t.steep > 0.15 ? ` El ${Math.round(t.steep * 100)} % del área supera 15° de pendiente, lo que añade riesgo de deslizamientos en caso de lluvias intensas.` : ""}`);
+  } else out.push(`<b class="t">Del terreno.</b> No se obtuvo el modelo de elevación, por lo que la caracterización del relieve debe completarse con cartografía o reconocimiento directo.`);
+  if (w) {
+    const c = w.current, d = w.daily, pp = Math.max(...d.precipitation_probability_max.slice(0, 3).map(v => v || 0)), acc = d.precipitation_sum.slice(0, 3).reduce((a, v) => a + (v || 0), 0);
+    const storm = d.weather_code.slice(0, 3).some(x => x >= 95), dry = d.time.findIndex((_, i) => (d.precipitation_probability_max[i] ?? 0) < 30 && d.weather_code[i] < 80);
+    const dayTxt = i => i === 0 ? "hoy" : i === 1 ? "mañana" : new Date(d.time[i] + "T12:00").toLocaleDateString("es-VE", { weekday: "long", day: "numeric" });
+    const effect = pp >= 60 || acc >= 15 ? "lo que degradaría la transitabilidad de trochas y terrenos bajos y reduciría la visibilidad" : pp >= 30 ? "con efecto moderado sobre trochas y caminos de tierra" : "sin efectos significativos previstos sobre la movilidad";
+    const hl = d.sunrise[0] && d.sunset[0] ? ((Date.parse(d.sunset[0]) - Date.parse(d.sunrise[0])) / 36e5).toFixed(1) : null;
+    out.push(`<b class="t">De las condiciones meteorológicas.</b> Actualmente el tiempo es ${wmo(c.weather_code)[0].toLowerCase()}, con ${Math.round(c.temperature_2m)} °C y viento de ${Math.round(c.wind_speed_10m)} km/h del ${rumbo(c.wind_direction_10m)}. Para las próximas 72 horas la probabilidad de lluvia llega a ${pp} % con un acumulado de ${acc.toFixed(0)} mm${storm ? " y posibles tormentas eléctricas" : ""}, ${effect}. ${dry >= 0 ? `La ventana más favorable del pronóstico es ${dayTxt(dry)}.` : "No hay días secos en el pronóstico de siete días."}${hl ? ` Se dispone de ${hl} horas de luz diurna (${d.sunrise[0].slice(11, 16)} a ${d.sunset[0].slice(11, 16)}).` : ""}`);
+  } else out.push(`<b class="t">De las condiciones meteorológicas.</b> No se obtuvo el pronóstico; debe consultarse antes de planificar actividades en el área.`);
+  const bridges = S.feats.filter(f => f.cat === "puente");
+  if (g) {
+    let txt = g.roads.length
+      ? `El acceso terrestre se apoya en ${(HW_ES[(g.main || g.near).t.highway] || "una vía").toLowerCase()}${(g.main || g.near).t.name || (g.main || g.near).t.ref ? ` ${(g.main || g.near).t.name || (g.main || g.near).t.ref}` : ""}, a ${fmtDist((g.main || g.near).d)} del punto${g.main ? "" : ", sin carreteras principales en 3 km"}${g.dirt && g.dirt !== g.near ? `, con una trocha o sendero a ${fmtDist(g.dirt.d)} como alternativa` : ""}.`
+      : "No hay vías mapeadas en 3 km, por lo que el acceso dependería de medios aéreos, fluviales o de la marcha a pie.";
+    if (bridges.length) txt += ` Se identifica${bridges.length > 1 ? "n" : ""} ${bridges.length} puente${bridges.length > 1 ? "s" : ""} en ${R}; ${bridges.length > 1 ? `${bridges.some(b => b.tags.maxweight) ? "algunos con capacidad de carga registrada" : "ninguno tiene capacidad de carga registrada"}, por lo que constituyen puntos críticos de la movilidad que deben verificarse` : `${bridges[0].tags.maxweight ? `con capacidad de carga registrada de ${esc(bridges[0].tags.maxweight)} t` : "sin capacidad de carga registrada"}, por lo que constituye un punto crítico de la movilidad que debe verificarse`}.`;
+    out.push(`<b class="t">De la movilidad.</b> ${txt}`);
+  } else out.push(`<b class="t">De la movilidad.</b> No se obtuvieron datos de vías; el acceso debe confirmarse en el terreno.${bridges.length ? ` Se identifican ${bridges.length} puente(s) en ${R}.` : ""}`);
+  const KEYS = [["salud", f => ["hospital", "clinic"].includes(f.tags.amenity)], ["seguridad", f => ["police", "fire_station"].includes(f.tags.amenity)], ["combustible", f => f.tags.amenity === "fuel"], ["aeródromo o helipuerto", f => f.tags.aeroway], ["comunicaciones", isComms]];
+  const have = KEYS.map(([k, p]) => [k, S.feats.find(p)]).filter(([, f]) => f), miss = KEYS.filter(([k]) => !have.some(([h]) => h === k)).map(([k]) => k);
+  if (!S.errs.feats) out.push(`<b class="t">Del apoyo e infraestructura.</b> ${have.length ? `En un radio de ${R} se dispone de ${list(have.map(([k, f]) => `${k} (${f.name || f.type.toLowerCase()}, a ${fmtDist(f.d)})`))}.` : `No se identifican servicios de apoyo en ${R}.`}${miss.length ? ` No se registran instalaciones de ${list(miss)}, lo que implica dependencia de apoyo externo${miss.includes("salud") ? " y la necesidad de prever la evacuación médica" : ""}.` : ""}`);
+  else out.push(`<b class="t">Del apoyo e infraestructura.</b> No se obtuvieron datos de infraestructura del entorno.`);
+  const rel = risks.filter(r => r.n >= 2).sort((a, b) => b.n - a.n);
+  out.push(`<b class="t">De los riesgos.</b> ${rel.length ? `Los factores más relevantes son ${list(rel.map(r => `${r.k.toLowerCase()} (${REP_LEVEL[r.n].t.toLowerCase()}: ${r.t.replace(/\.$/, "").replace(/^./, c => c.toLowerCase())})`))}.` : "Ninguno de los factores evaluados presenta un nivel superior a bajo."}${risks.some(r => r.n === 0) ? ` No pudieron evaluarse: ${list(risks.filter(r => r.n === 0).map(r => r.k.toLowerCase()))}.` : ""}`);
+
+  // Conclusión: condición del área según riesgos y acceso
+  const highs = risks.filter(r => r.n === 3), mods = risks.filter(r => r.n === 2), noAccess = g && !g.roads.length;
+  const cond = highs.length >= 2 || (highs.length && noAccess) ? 3 : highs.length || mods.length >= 2 || noAccess ? 2 : 1;
+  const COND = { 1: ["FAVORABLES", "#2f8a3c"], 2: ["FAVORABLES CON RESTRICCIONES", "#b7791f"], 3: ["DESFAVORABLES", "#c22f4f"] }[cond];
+  const why = [...highs, ...mods].slice(0, 3).map(r => r.k.toLowerCase());
+  if (noAccess) why.unshift("la ausencia de accesos terrestres");
+  const keyRec = rec.filter(r => !/^Validar en el terreno/.test(r)).slice(0, 3);
+  const verdict = `<div class="verdict"><p style="margin:0 0 4px"><b>Conclusión.</b> Con base en lo expuesto, se aprecia que el área presenta condiciones <span class="lvl" style="background:${COND[1]}">${COND[0]}</span> para el desarrollo de actividades${why.length ? `, condicionadas principalmente por ${list(why)}` : ", sin factores limitantes significativos en los datos disponibles"}.</p>
+    ${keyRec.length ? `<p style="margin:0">Se recomienda: ${keyRec.map((r, i) => `(${i + 1}) ${r.replace(/\.+$/, "").replace(/^./, c => c.toLowerCase())}`).join("; ")}.</p>` : ""}
+    <p class="note" style="margin:4px 0 0">Apreciación elaborada con fuentes abiertas y reglas fijas; debe confirmarse con reconocimiento en el terreno.</p></div>`;
+  return { paras: out, verdict };
+}
+
+function buildBrief() {
+  const P = S.point, ad = adminOf(S.place), now = new Date(), t = S.terrain, w = S.weather, g = S.ground, info = S.info, my = S.custom;
+  const name = (my && my.name) || S.title || (S.place && (S.place.name || (S.place.display_name || "").split(",")[0])) || "Punto seleccionado";
+  const num = `RO-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  REP.name = `Reporte ${name} ${now.toISOString().slice(0, 10)}`;
+  const risks = assessRisks(), rec = recommendations(risks), apr = appreciation(risks, rec);
+  const scored = risks.filter(r => r.n), highs = scored.filter(r => r.n === 3).length, mods = scored.filter(r => r.n === 2).length;
+  const global = highs ? 3 : mods ? 2 : scored.length ? 1 : 0;
+  const tc = t ? terrainClass(t) : null;
+  const row = (k, v) => `<tr><td>${k}</td><td>${v}</td></tr>`;
+
+  // Hoja 1: identificación, resumen, croquis y datos clave, riesgos
+  const desc = info ? `${esc(info.description || info.title)}${info.extract ? `. ${esc(info.extract.split(/(?<=\.)\s/).slice(0, 2).join(" "))}` : ""}` : my && my.desc ? esc(my.desc) : "";
+  let cover = "";
+  if (g) { const seen = new Set(); for (const a of g.areas) for (const k of ["boundary", "leisure", "landuse", "natural"]) { const lab = COVER_ES[a[k]]; if (lab) seen.add(a.name && /^(boundary|leisure)$/.test(k) ? `${lab}: ${a.name}` : lab); } cover = [...seen].slice(0, 4).join(" · "); }
+  const keyRows = [
+    t && row("Terreno", `${esc(tc[0])}; pendiente media ${t.mean.toFixed(0)}°, en el punto ${t.slope.toFixed(0)}°${t.slope >= 2 ? ` hacia ${rumbo(t.aspect)}` : ""}`),
+    t && row("Altitud", `${fmtNum(Math.round(t.e0))} m (área ${fmtNum(Math.round(t.mn))}–${fmtNum(Math.round(t.mx))} m)`),
+    t && row("Transitabilidad", esc(transit(t.slope))),
+    cover && row("Suelo", esc(cover)),
+    w && row("Tiempo actual", `${esc(wmo(w.current.weather_code)[0])}, ${Math.round(w.current.temperature_2m)} °C, viento ${Math.round(w.current.wind_speed_10m)} km/h ${rumbo(w.current.wind_direction_10m)}`),
+    w && row("Lluvia 72 h", `${Math.max(...w.daily.precipitation_probability_max.slice(0, 3).map(v => v || 0))} % · ${w.daily.precipitation_sum.slice(0, 3).reduce((a, v) => a + (v || 0), 0).toFixed(0)} mm`),
+    w && row("Luz diurna", `${(w.daily.sunrise[0] || "").slice(11, 16)} – ${(w.daily.sunset[0] || "").slice(11, 16)}`),
+    g && row("Acceso", g.roads.length ? `${esc(HW_ES[g.near.t.highway] || "vía")}${g.near.t.name || g.near.t.ref ? ` ${esc(g.near.t.name || g.near.t.ref)}` : ""} a ${fmtDist(g.near.d)} ${rumbo(bearing(P, g.near))}` : "Sin vías en 3 km"),
+    row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos" : ["puente", "agua", "estructura", "servicio"].map(c => { const n = S.feats.filter(f => f.cat === c).length; return `${n} ${{ puente: "puente", agua: "agua", estructura: "estructura", servicio: "servicio" }[c]}${n !== 1 && c !== "agua" ? "s" : ""}`; }).join(" · ")),
+    row("Sismos (150 km, 1 año)", S.errs.quakes ? "Sin datos" : `${S.quakes.filter(q => q.d < 150).length}${S.quakes.length ? `; máx. M${Math.max(...S.quakes.map(q => q.mag)).toFixed(1)} en 300 km` : ""}`),
+  ].filter(Boolean).join("");
+
+  // Hoja 2: datos de apoyo compactos y apreciación
+  const d = w && w.daily, fmtDay = (s, i) => i === 0 ? "Hoy" : i === 1 ? "Mañana" : new Date(s + "T12:00").toLocaleDateString("es-VE", { weekday: "short", day: "numeric" });
+  const wx = d ? `<table><tr><th>Día</th><th>Condición</th><th>Lluvia</th><th>Mín/máx</th></tr>${d.time.slice(0, 3).map((s, i) => `<tr><td>${fmtDay(s, i)}</td><td>${esc(wmo(d.weather_code[i])[0])}</td><td class="n">${d.precipitation_probability_max[i] ?? 0} % · ${d.precipitation_sum[i] ?? 0} mm</td><td class="n">${Math.round(d.temperature_2m_min[i])}/${Math.round(d.temperature_2m_max[i])} °C</td></tr>`).join("")}</table>` : `<p class="note">Sin pronóstico.</p>`;
+  const acc = g ? [["Vía más cercana", g.near], ["Carretera", g.main], ["Trocha / sendero", g.dirt]].filter(([, r], i, a) => r && !a.slice(0, i).some(([, q]) => q === r)) : [];
+  const bridges = S.feats.filter(f => f.cat === "puente").slice(0, 3);
+  const mob = `<table><tr><th>Acceso / puente</th><th>Detalle</th><th>Dist.</th></tr>${acc.map(([l, r]) => `<tr><td>${l}</td><td>${esc(HW_ES[r.t.highway] || r.t.highway)}${SURF_ES[r.t.surface] ? `, ${esc(SURF_ES[r.t.surface])}` : ""}</td><td class="n">${fmtDist(r.d)} ${rumbo(bearing(P, r))}</td></tr>`).join("")}${bridges.map(b => `<tr><td>${esc(b.name || "Puente")}</td><td>${esc(b.type)}${b.tags.maxweight ? `, máx. ${esc(b.tags.maxweight)} t` : ""}</td><td class="n">${where(b)}</td></tr>`).join("")}${!acc.length && !bridges.length ? `<tr><td colspan="3" class="note">${g ? "Sin vías ni puentes mapeados." : "Sin datos de vías."}</td></tr>` : ""}</table>`;
+  const SUP = [["Salud", f => ["hospital", "clinic", "pharmacy"].includes(f.tags.amenity)], ["Seguridad", f => ["police", "fire_station"].includes(f.tags.amenity)], ["Combustible", f => f.tags.amenity === "fuel"],
+    ["Aeródromo / helipuerto", f => f.tags.aeroway], ["Comunicaciones", isComms], ["Agua / hidrografía", f => f.cat === "agua"]];
+  const sup = S.errs.feats ? `<p class="note">Sin datos de OSM.</p>` : `<table><tr><th>Apoyo</th><th>Más cercano</th><th>Dist.</th></tr>${SUP.map(([l, p]) => { const f = S.feats.find(p); return `<tr><td>${l}</td><td>${f ? esc(f.name || f.type) : "—"}</td><td class="n">${f ? fmtDist(f.d) : "—"}</td></tr>`; }).join("")}</table>`;
+
+  return `<article class="rep brief">
+    <div class="cls"><span>Uso interno · Fuentes abiertas</span><span>${num} · Hoja 1 de 2</span></div>
+    <p class="note" style="margin:8px 0 0">REPORTE OPERATIVO DE ÁREA</p>
+    <h1>${esc(name)}</h1>
+    <p style="margin:0">${esc([ad.localidad, ad.municipio, ad.estado].filter(Boolean).join(" · ") || (S.place && S.place.display_name) || "")}</p>
+    <div class="meta">
+      <div>GFH: <b>${dtg(now)}</b></div><div>Decimal: <b>${P.lat.toFixed(5)}, ${P.lon.toFixed(5)}</b></div><div>UTM: <b>${toUTM(P.lat, P.lon)}</b></div>
+      <div>GMS: <b>${toDMS(P.lat, "N", "S")} ${toDMS(P.lon, "E", "O")}</b></div><div>Radio de análisis: <b>${fmtDist(S.radius)}</b></div><div>Altitud: <b>${t ? fmtNum(Math.round(t.e0)) + " m" : "—"}</b></div>
+    </div>
+    <h2>1. Situación del área</h2>
+    <div class="box global"><span>Nivel de riesgo general:</span>${lvlTag(global)}<span class="note">${highs} alto(s) y ${mods} moderado(s) de ${scored.length} factores</span></div>
+    ${desc ? `<p style="margin:2px 0 6px">${desc}</p>` : ""}${my && my.notes ? `<p style="margin:0 0 6px"><b>Notas propias:</b> ${esc(my.notes.slice(0, 300))}${my.notes.length > 300 ? "…" : ""}</p>` : ""}
+    <div class="cols"><div>${sketchSVG()}<div class="legend">${Object.entries(CATS).filter(([k]) => S.feats.some(f => f.cat === k)).map(([k, c]) => `<span><i style="background:${REP_COLORS[k]}"></i>${c.label}</span>`).join("")}<span><i style="background:#d99a06"></i>Punto</span></div>
+      ${t ? `<div class="mini">${terrainSVG(t)}<span class="note">Relieve en ${fmtDist(2 * t.R)} de lado: verde bajo, marrón alto.</span></div>` : ""}</div>
+      <div><h3 style="margin-top:0">Datos clave</h3><table>${keyRows}</table></div></div>
+    <h2>2. Evaluación de riesgos</h2>
+    <table><tr><th>Factor</th><th>Nivel</th><th>Fundamento</th></tr>${risks.map(r => `<tr><td>${esc(r.k)}</td><td>${lvlTag(r.n)}</td><td>${esc(r.t)}</td></tr>`).join("")}</table>
+
+    <div class="page2"><span class="sheet-tag">HOJA 2</span>
+    <div class="cls"><span>Uso interno · Fuentes abiertas</span><span>${num} · Hoja 2 de 2</span></div>
+    <h2>3. Datos de apoyo</h2>
+    <div class="cols2"><div><h3 style="margin-top:0">Pronóstico 72 h</h3>${wx}<h3>Movilidad</h3>${mob}</div><div><h3 style="margin-top:0">Apoyo e hidrografía (${fmtDist(S.radius)})</h3>${sup}</div></div>
+    <h2>4. Apreciación</h2>
+    <div class="apr">${apr.paras.map(p => `<p>${p}</p>`).join("")}${apr.verdict}</div>
+    <p class="note" style="margin-top:8px">Fuentes: Copernicus 90 m y meteorología (Open‑Meteo), OpenStreetMap, Wikipedia/Wikidata, USGS. Generado el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }).replace(/\.$/, "")}.${["terrain", "weather", "ground", "feats", "quakes"].some(k => S.errs[k]) ? " Algunas fuentes no respondieron; ver factores sin dato." : ""}</p>
+    <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div></div>
   </article>`;
 }
