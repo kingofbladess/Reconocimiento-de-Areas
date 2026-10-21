@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.3 · octubre 2026
+Versión 3.3.1 · octubre 2026
 
 ## Cómo abrirla
 
