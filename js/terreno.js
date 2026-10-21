@@ -64,7 +64,7 @@ async function loadGround(id) {
     if (el.type === "area") { if (t.boundary !== "administrative") areas.push(t); continue; }
     if (!t.highway) continue;
     const g = (el.geometry || []).filter(Boolean), best = g.length ? nearestOn(S.point, g) : null;
-    if (best) roads.push({ t, ...best });
+    if (best) roads.push({ t, ...best, geom: g });
   }
   roads.sort((a, b) => a.d - b.d);
   S.ground = { areas, roads,

@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.0 · octubre 2026
+Versión 3.1 · octubre 2026
 
 ## Cómo abrirla
 
@@ -44,6 +44,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
 - **Sismos** del último año en 300 km (USGS).
 - **Herramientas:** medir distancias con perfil del terreno, y capas Satélite, Mapa, Relieve y Sombras.
+- **Analizar:** el botón de la ficha reúne todo lo consultado en un **reporte operativo del área**: resumen ejecutivo con nivel de riesgo, situación geográfica y croquis, terreno, meteorología, movilidad y puentes, infraestructura y servicios, evaluación de riesgos, puntos de referencia, recomendaciones y fuentes. Se imprime o guarda como PDF, o se descarga como archivo HTML.
 - **Mis lugares:** guarda puntos con nombre, categoría, notas, fotos y PDF. Exporta e importa respaldos.
 
 El mapa resalta Venezuela y no acepta puntos fuera del país. El contorno viene de OpenStreetMap, que deja fuera la Guayana Esequiba.
@@ -68,6 +69,7 @@ reconocimiento-venezuela/
 │   ├── interaccion.js      Clics, formularios y archivos de la ficha
 │   ├── visor.js            Visor de fotos y PDF
 │   ├── herramientas.js     Avisos, medición y perfil del terreno
+│   ├── reporte.js          Botón Analizar: reporte operativo del área
 │   └── inicio.js           Arranque e instalación
 ├── sw.js                   Modo sin conexión (guarda la app y los mapas ya vistos)
 ├── manifest.webmanifest    Datos para instalar la app

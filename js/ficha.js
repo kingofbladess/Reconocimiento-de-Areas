@@ -52,8 +52,9 @@ function renderHead() {
   const about = my ? `<p class="src" style="margin:0 0 6px">${esc(catOf(my).label)} · guardado por ti · actualizado el ${fmtDate(my.updated)}</p>
       ${my.desc ? `<p class="summary">${esc(my.desc)}</p>` : ""}${my.notes ? `<div class="sub">Notas de reconocimiento</div><p class="notes">${esc(my.notes)}</p>` : ""}
       ${wiki ? `<div class="sub">Según Wikipedia</div>${wiki}` : ""}` : wiki;
-  const acts = my ? `<button class="btn primary" data-act="edit">Editar lugar</button><button class="btn" data-act="addfiles">Subir fotos o PDF</button>`
-    : `<button class="btn primary" data-act="save">Guardar como mi lugar</button>`;
+  const acts = `<button class="btn primary" data-act="analyze" title="Reporte operativo del área con toda la información reunida">Analizar</button>`
+    + (my ? `<button class="btn" data-act="edit">Editar lugar</button><button class="btn" data-act="addfiles">Subir fotos o PDF</button>`
+      : `<button class="btn" data-act="save">Guardar como mi lugar</button>`);
   el.innerHTML = `
     <div class="hero">${img ? `<img src="${esc(img)}" alt="${esc(name)}" onerror="this.remove()">` : ""}<div class="shade"></div>${credit}
       <button class="close" id="closeSheet" aria-label="Cerrar ficha">✕</button>

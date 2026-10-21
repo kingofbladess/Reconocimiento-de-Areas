@@ -20,6 +20,7 @@ sheetBody.addEventListener("click", async e => {
   const act = e.target.closest("[data-act]");
   if (act) {
     const a = act.dataset.act;
+    if (a === "analyze") return openReport();
     if (a === "save") return renderForm(null);
     if (a === "edit") return renderForm(S.custom);
     if (a === "addfiles") { const fi = $("#fileHere"); if (fi) { sheetBody.scrollTo({ top: $("#s-archivos").offsetTop - 44 }); fi.click(); } return; }
