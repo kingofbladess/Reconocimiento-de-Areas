@@ -1,0 +1,105 @@
+// Búsqueda por nombre o coordenadas y selección de un punto
+"use strict";
+
+// ---------- Búsqueda ----------
+const resultsEl = $("#results");
+$("#featured").innerHTML = FEATURED.map((f, i) => `<button data-f="${i}">${esc(f[0])}</button>`).join("");
+$("#featured").addEventListener("click", e => {
+  const b = e.target.closest("button[data-f]"); if (!b) return;
+  const [name, lat, lon, z] = FEATURED[+b.dataset.f];
+  $("#q").value = name;
+  searchByName(name, { lat, lon, z });
+});
+$("#searchForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  const c = parseCoords(q);
+  if (c) { resultsEl.hidden = true; return selectPoint(c.lat, c.lon, { zoom: 15 }); }
+  searchByName(q);
+});
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let found = [];
+resultsEl.addEventListener("click", ev => {
+  const m = ev.target.closest("button[data-mine]");
+  if (m) { resultsEl.hidden = true; return openMine(m.dataset.mine); }
+  const b = ev.target.closest("button[data-i]"); if (!b) return;
+  const d = found[+b.dataset.i]; resultsEl.hidden = true;
+  const bb = d.boundingbox && d.boundingbox.map(Number);
+  selectPoint(+d.lat, +d.lon, { bounds: bb ? [[bb[0], bb[2]], [bb[1], bb[3]]] : null, place: d });
+});
+async function searchByName(q, featured) {
+  resultsEl.hidden = false; resultsEl.innerHTML = '<div class="loading">Buscando en Venezuela…</div>';
+  const vb = `${VE_BBOX.w},${VE_BBOX.n},${VE_BBOX.e},${VE_BBOX.s}`;
+  const qn = norm(q), mine = featured ? [] : MY.places.filter(p => norm(`${p.name} ${p.desc} ${p.notes}`).includes(qn)).slice(0, 5);
+  const mineHtml = mine.map(p => `<button data-mine="${esc(p.id)}"><b>★ ${esc(p.name)}</b><span>Mi lugar · ${esc(catOf(p).label)}</span></button>`).join("");
+  try {
+    const data = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&accept-language=es&countrycodes=ve&viewbox=${vb}&bounded=1&q=${encodeURIComponent(q)}`);
+    if (featured) {
+      resultsEl.hidden = true;
+      const near = data.find(d => dist({ lat: +d.lat, lon: +d.lon }, featured) < 30000);
+      return selectPoint(featured.lat, featured.lon, { zoom: featured.z, place: near || null, title: q, force: true });
+    }
+    found = data;
+    if (!data.length && !mine.length) { resultsEl.innerHTML = '<div class="note">No encontré ese lugar en Venezuela. Prueba agregando el estado o la ciudad, por ejemplo “Plaza Bolívar, Mérida”.</div>'; return; }
+    resultsEl.innerHTML = mineHtml + data.map((d, i) => `<button data-i="${i}"><b>${esc(d.name || d.display_name.split(",")[0])}</b><span>${esc(d.display_name.replace(/, Venezuela$/, ""))}</span></button>`).join("");
+  } catch (err) {
+    if (featured) { resultsEl.hidden = true; return selectPoint(featured.lat, featured.lon, { zoom: featured.z, title: q, force: true }); }
+    resultsEl.innerHTML = mineHtml + `<div class="err">${esc(err.message)}</div>`;
+  }
+}
+document.addEventListener("click", e => { if (!e.target.closest(".finder")) resultsEl.hidden = true; });
+
+// ---------- Selección de punto ----------
+let reqId = 0;
+async function selectPoint(lat, lon, opts = {}) {
+  if (!opts.force && !inVenezuela(lat, lon)) { toast("Ese punto está fuera de Venezuela. Elige una ubicación dentro del país."); return; }
+  const id = ++reqId;
+  const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
+  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, weather: null, air: null, info: null, photos: [], wiki: [], feats: [], quakes: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
+  featLayer.clearLayers(); wikiLayer.clearLayers(); quakeLayer.clearLayers();
+  if (pointMarker) pointMarker.setLatLng([lat, lon]);
+  else pointMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true, zIndexOffset: 1000 }).addTo(map)
+    .on("dragend", e => { const p = e.target.getLatLng(); selectPoint(p.lat, p.lng); });
+  drawRadius();
+  if (opts.bounds) map.fitBounds(L.latLngBounds(opts.bounds).pad(0.1), { maxZoom: 16 });
+  else if (opts.zoom) map.setView([lat, lon], Math.max(map.getZoom(), opts.zoom));
+  try { history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`); } catch (_) {}
+  $("#sheet").classList.remove("min");
+  renderSheet();
+  if (opts.form) renderForm(null);
+  loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadWiki(id); loadFeatures(id); loadGround(id); loadQuakes(id);
+  if (!S.place) await reverse(id);
+  if (id !== reqId) return;
+  if (!veShape && S.place && S.place.address && S.place.address.country_code && S.place.address.country_code !== "ve") {
+    toast("Ese punto está fuera de Venezuela."); return;
+  }
+  loadInfo(id);
+}
+let pickNew = false; // "Agregar lugar": el siguiente toque en el mapa abre el formulario
+map.on("click", e => { if (measuring) return addMeasure(e.latlng); const form = pickNew; pickNew = false; selectPoint(e.latlng.lat, e.latlng.lng, { form }); });
+
+async function reverse(id) {
+  try {
+    const d = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&extratags=1&accept-language=es&lat=${S.point.lat}&lon=${S.point.lon}`);
+    if (id !== reqId) return;
+    S.place = d.error ? { display_name: "Zona sin dirección registrada (agua o área remota)" } : d;
+  } catch (_) { if (id === reqId) S.place = { display_name: "No se pudo obtener la dirección" }; }
+  if (id === reqId) {
+    renderHead(); renderCoords();
+    const ni = $("#placeForm [name=name]"); if (ni && !ni.value && S.place && S.place.name) ni.value = S.place.name;
+  }
+}
+function drawRadius() {
+  const ll = [S.point.lat, S.point.lon];
+  if (radiusCircle) radiusCircle.setLatLng(ll).setRadius(S.radius);
+  else radiusCircle = L.circle(ll, { radius: S.radius, color: cssVar("--gold"), weight: 2, dashArray: "6 6", fillOpacity: 0.05, interactive: false }).addTo(map);
+}
+function adminOf(p) {
+  const a = (p && p.address) || {};
+  return {
+    estado: a.state || a.region || "",
+    municipio: a.county || a.municipality || "",
+    localidad: a.city || a.town || a.village || a.hamlet || "",
+    sector: a.suburb || a.city_district || a.quarter || a.neighbourhood || "",
+  };
+}

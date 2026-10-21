@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reconocimiento Venezuela</title>
+<meta name="description" content="Mapa de reconocimiento de áreas de Venezuela: terreno, clima, fotos, entorno y lugares propios con fotos y PDF.">
+<meta name="theme-color" content="#0b7a75">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="iconos/icono-192.png" type="image/png">
+<link rel="apple-touch-icon" href="iconos/icono-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div id="map"></div>
+
+<div class="finder">
+  <div class="finder-card">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><div><h1>Reconocimiento Venezuela</h1><small>Ubicación, clima, fotos y entorno de cualquier punto del país</small></div></div>
+    <form class="search" id="searchForm" autocomplete="off">
+      <input id="q" type="search" placeholder="Busca un lugar o pega coordenadas" aria-label="Buscar lugar o coordenadas en Venezuela">
+      <button class="btn primary" type="submit">Buscar</button>
+    </form>
+    <div class="featured" id="featured" aria-label="Lugares destacados"></div>
+    <div class="results" id="results" hidden></div>
+  </div>
+</div>
+
+<aside class="sheet" id="sheet" aria-label="Ficha del lugar">
+  <button class="grab" id="grab" aria-label="Expandir o contraer la ficha"></button>
+  <div class="sheet-scroll" id="sheetScroll"></div>
+</aside>
+
+<div class="tools">
+  <div class="seg" id="layers" role="group" aria-label="Tipo de mapa">
+    <button data-layer="satelite" aria-pressed="true">Satélite</button>
+    <button data-layer="mapa" aria-pressed="false">Mapa</button>
+    <button data-layer="topo" aria-pressed="false">Relieve</button>
+    <button data-layer="sombras" aria-pressed="false">Sombras</button>
+  </div>
+  <button class="tool" id="btnMeasure" aria-pressed="false" title="Medir distancia y ver el perfil del terreno"><svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>Medir</button>
+  <button class="tool" id="btnMine" title="Mis lugares guardados"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 7v5M9.5 9.5h5"/></svg>Mis lugares <span id="mineCount"></span></button>
+  <button class="tool" id="btnInstall" hidden title="Instalar como aplicación"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Instalar</button>
+  <button class="tool" id="btnVE" title="Ver toda Venezuela"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>País</button>
+</div>
+<div class="measure-box" id="measureBox" hidden>Toca el mapa para trazar puntos · <b id="measureVal">0 m</b>
+  <button class="copy" id="measureProfile">Perfil del terreno</button> <button class="copy" id="measureClear">Borrar</button>
+  <div id="profileBox"></div></div>
+<div class="readout" id="readout" hidden></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<div class="album" id="album" hidden>
+  <div class="album-top"><h2 id="albumTitle"></h2><button class="btn" id="albumClose">Cerrar</button></div>
+  <div class="album-grid" id="albumGrid"></div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Visor de fotos y documentos">
+  <div class="lb-top"><span class="cnt" id="lbCount"></span><span class="ttl" id="lbTitle"></span><a class="lb-open" id="lbOpen" target="_blank" rel="noopener">Abrir original</a><button class="lb-close" id="lbClose" aria-label="Cerrar">✕</button></div>
+  <div class="lb-stage" id="lbStage"><button class="lb-btn lb-prev" id="lbPrev" aria-label="Anterior">‹</button><button class="lb-btn lb-next" id="lbNext" aria-label="Siguiente">›</button></div>
+  <div class="lb-meta" id="lbMeta"></div>
+  <div class="lb-strip" id="lbStrip"></div>
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Módulos de la app, en orden de dependencia (ver README.md) -->
+<script src="js/nucleo.js"></script>
+<script src="js/mapa.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/red.js"></script>
+<script src="js/busqueda.js"></script>
+<script src="js/fuentes.js"></script>
+<script src="js/entorno.js"></script>
+<script src="js/terreno.js"></script>
+<script src="js/mis-lugares.js"></script>
+<script src="js/ficha.js"></script>
+<script src="js/interaccion.js"></script>
+<script src="js/visor.js"></script>
+<script src="js/herramientas.js"></script>
+<script src="js/inicio.js"></script>
+</body>
+</html>
