@@ -1,11 +1,11 @@
 // Service worker: guarda la app para abrirla sin conexión y conserva las teselas del mapa ya vistas.
 // Al cambiar cualquier archivo de la app, sube VERSION para que los usuarios reciban la versión nueva.
-const VERSION = "v3.3.1";
+const VERSION = "v3.4.0";
 const APP = `app-${VERSION}`, LIBS = "libs-v1", TILES = "teselas-v1", MAX_TILES = 3000;
 const SHELL = ["./", "index.html", "css/estilos.css", "manifest.webmanifest", "iconos/logo.svg", "iconos/icono-192.png", "iconos/icono-512.png",
-  ...["nucleo", "mapa", "geo", "red", "busqueda", "fuentes", "entorno", "terreno", "mis-lugares", "ficha", "interaccion", "visor", "herramientas", "reporte", "inicio"].map(m => `js/${m}.js`)];
+  ...["nucleo", "mapa", "geo", "red", "relieve", "busqueda", "fuentes", "entorno", "terreno", "mis-lugares", "ficha", "interaccion", "visor", "herramientas", "reporte", "vista3d", "inicio"].map(m => `js/${m}.js`)];
 const LIB_HOSTS = ["unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com"];
-const TILE_RE = /(arcgisonline\.com\/ArcGIS\/rest\/services\/.+\/tile\/|tile\.openstreetmap\.org|tile\.opentopomap\.org)/;
+const TILE_RE = /(arcgisonline\.com\/ArcGIS\/rest\/services\/.+\/tile\/|tile\.openstreetmap\.org|tile\.opentopomap\.org|elevation-tiles-prod\/terrarium\/)/;
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(APP).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {

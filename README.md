@@ -38,12 +38,14 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 
 - **Búsqueda** por nombre, coordenadas decimales o GMS (`10°30'22"N 66°54'53"O`). También puedes tocar el mapa o abrir un enlace `#lat,lon`.
 - **Ficha del punto:** coordenadas (decimal, GMS, UTM), estado, municipio, información de Wikipedia/Wikidata y enlaces a Google Maps, Street View y Google Earth.
-- **Terreno:** tipo de relieve, pendiente y orientación, desnivel, mapa de alturas, perfiles, uso del suelo, vías y trochas cercanas, y alertas de inundación o deslizamiento.
+- **Terreno:** tipo de relieve, pendiente y orientación, desnivel, mapa de alturas sombreado, perfiles, uso del suelo, vías y trochas cercanas, y alertas de inundación o deslizamiento. Al pasar el cursor o el dedo por el mapa de alturas o por un perfil, el punto se marca en el mapa con su altitud y distancia.
+- **Vista 3D:** botón **3D** del mapa o de la ficha (o tecla `3`). Muestra el relieve real con imagen satelital, relieve topográfico o mapa; se puede inclinar (Cenital, Oblicua, Rasante), girar, exagerar la altura del relieve (×1 a ×4) y hacer que la cámara gire sola alrededor del punto. Incluye el punto elegido, el radio, el trazo de medición y los elementos del entorno. Clic derecho o Ctrl + arrastrar gira e inclina; en el teléfono, dos dedos.
 - **Clima:** condiciones actuales, próximas 24 horas, pronóstico de 7 días y calidad del aire.
 - **Fotos** geolocalizadas de Wikimedia Commons y artículos de Wikipedia cercanos.
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
 - **Sismos** del último año en 300 km (USGS).
-- **Herramientas:** medir distancias con perfil del terreno, y capas Satélite, Mapa, Relieve y Sombras.
+- **Herramientas:** medir distancias con perfil del terreno que se actualiza solo (los puntos se arrastran para corregir el trazo y un toque los quita), capa **Pendientes** que colorea las laderas según su inclinación, capas Satélite, Mapa, Relieve y Sombras, y **Mi ubicación**.
+- **Manejo del mapa:** zoom continuo con la rueda, doble toque para acercar sin abrir la ficha, altitud bajo el cursor, y menú con clic derecho o manteniendo presionado (ver ficha, ver en 3D, medir desde ahí, copiar coordenadas). Atajos: `3` vista 3D, `M` medir, `P` pendientes, `/` buscar, `Esc` cerrar.
 - **Analizar:** el botón de la ficha reúne todo lo consultado en un **reporte operativo del área de dos hojas**:
   - Hoja 1: identificación del punto, nivel de riesgo general, croquis, mapa de relieve, datos clave y evaluación de riesgos.
   - Hoja 2: pronóstico de 72 h, movilidad y puentes, apoyo disponible y una **apreciación argumentada** (terreno, meteorología, movilidad, apoyo y riesgos) que concluye si el área es favorable, favorable con restricciones o desfavorable, con las recomendaciones principales.
@@ -64,6 +66,7 @@ reconocimiento-venezuela/
 │   ├── mapa.js             Mapa base, capas y contorno de Venezuela
 │   ├── geo.js              Formatos de coordenadas y geometría
 │   ├── red.js              Peticiones con reintento y mensajes de error
+│   ├── relieve.js          Modelo de elevación en teselas, altitud al instante y capa de pendientes
 │   ├── busqueda.js         Búsqueda y selección de un punto
 │   ├── fuentes.js          Wikipedia, Commons, clima, aire y sismos
 │   ├── entorno.js          Elementos cercanos de OpenStreetMap
@@ -72,8 +75,9 @@ reconocimiento-venezuela/
 │   ├── ficha.js            Dibujo de la ficha lateral
 │   ├── interaccion.js      Clics, formularios y archivos de la ficha
 │   ├── visor.js            Visor de fotos y PDF
-│   ├── herramientas.js     Avisos, medición y perfil del terreno
+│   ├── herramientas.js     Avisos, medición, menú del mapa, mi ubicación y atajos
 │   ├── reporte.js          Botón Analizar: reporte operativo del área
+│   ├── vista3d.js          Vista 3D del terreno (MapLibre GL)
 │   └── inicio.js           Arranque e instalación
 ├── sw.js                   Modo sin conexión (guarda la app y los mapas ya vistos)
 ├── manifest.webmanifest    Datos para instalar la app
@@ -89,7 +93,7 @@ Los archivos `js/` comparten variables globales y deben cargarse en el orden de 
 
 ## Servicios que usa
 
-Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata, Wikimedia Commons y USGS (sismos).
+Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL (vista 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata, Wikimedia Commons y USGS (sismos).
 
 Hace falta internet para consultar datos nuevos. Sin conexión se abre la app con los mapas ya vistos y tus lugares guardados. Si un servicio está saturado, la sección muestra el aviso y un botón **Reintentar**.
 

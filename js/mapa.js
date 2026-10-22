@@ -2,9 +2,24 @@
 "use strict";
 
 // ---------- Mapa ----------
+// Zoom fraccionado y rueda más fina: el mapa se acerca de forma continua en lugar de a saltos
 const map = L.map("map", { zoomControl: false, worldCopyJump: false, minZoom: 5, maxBoundsViscosity: 0.8,
+  zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 110, wheelDebounceTime: 25, bounceAtZoomLimits: false,
+  inertiaDeceleration: 2200, easeLinearity: 0.2, doubleClickZoom: true,
   maxBounds: [[VE_BBOX.s - 3, VE_BBOX.w - 4], [VE_BBOX.n + 4, VE_BBOX.e + 4]] });
-L.control.zoom({ position: "topright" }).addTo(map);
+L.control.zoom({ position: "topright", zoomInTitle: "Acercar (+)", zoomOutTitle: "Alejar (−)" }).addTo(map);
+// Botones bajo el zoom: vista 3D, mi ubicación y norte/país
+const MapButtons = L.Control.extend({
+  options: { position: "topright" },
+  onAdd() {
+    const d = L.DomUtil.create("div", "leaflet-bar map-btns");
+    d.innerHTML = `<a href="#" role="button" id="mb3d" title="Vista 3D del terreno (tecla 3)" class="mb-3d">3D</a>
+      <a href="#" role="button" id="mbLocate" title="Mi ubicación"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></a>`;
+    L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+    return d;
+  },
+});
+new MapButtons().addTo(map);
 L.control.scale({ imperial: false, position: "bottomright" }).addTo(map);
 const veBounds = L.latLngBounds([VE_BBOX.s, VE_BBOX.w], [VE_BBOX.n, VE_BBOX.e]);
 map.fitBounds(veBounds);
@@ -31,7 +46,12 @@ const wIcon = L.divIcon({ className: "", html: '<div class="wpin">W</div>', icon
 let pointMarker = null, radiusCircle = null, maskLayer = null;
 const featLayer = L.layerGroup().addTo(map), wikiLayer = L.layerGroup().addTo(map), quakeLayer = L.layerGroup().addTo(map);
 
-map.on("mousemove", e => { const r = $("#readout"); r.hidden = false; r.textContent = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`; });
+// Coordenadas y altitud bajo el cursor
+map.on("mousemove", e => {
+  const r = $("#readout"), ll = e.latlng, c = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
+  r.hidden = false; r.textContent = c;
+  if (map.getZoom() >= 7) hoverElevation(ll, v => { r.innerHTML = `${c} · <b>${fmtNum(Math.round(v))} m</b>`; });
+});
 map.on("mouseout", () => { $("#readout").hidden = true; });
 
 // Contorno del país y máscara oscura fuera de Venezuela

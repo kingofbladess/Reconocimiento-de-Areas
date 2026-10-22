@@ -211,8 +211,8 @@ function buildReport() {
       <tr><td>Pendiente media / área > 15°</td><td class="n">${t.mean.toFixed(0)}° / ${Math.round(t.steep * 100)} %</td></tr>
       <tr><td>Posición relativa</td><td>${t.below >= 0.85 ? "Dominante (zona alta)" : t.below <= 0.15 ? "Deprimida (zona baja)" : "Intermedia"}</td></tr>
       <tr><td>Transitabilidad en el punto</td><td>${esc(transit(t.slope))}</td></tr></table></div></div>
-      <div class="keep"><h3>Perfil oeste → este</h3>${profileSVG(row, 2 * t.R, "O", "E")}</div><div class="keep"><h3>Perfil sur → norte</h3>${profileSVG(col, 2 * t.R, "S", "N")}</div>
-      <p class="note">Modelo de elevación Copernicus 90 m. Cuadro de ${fmtDist(2 * t.R)} de lado; colores del mapa: verde bajo, marrón alto.</p>`;
+      <div class="keep"><h3>Perfil oeste → este</h3>${profileSVG(t.pWE ? t.pWE.vals : row, 2 * t.R, "O", "E")}</div><div class="keep"><h3>Perfil sur → norte</h3>${profileSVG(t.pSN ? t.pSN.vals : col, 2 * t.R, "S", "N")}</div>
+      <p class="note">Modelo de elevación ${esc(t.src || "Copernicus 90 m")}. Cuadro de ${fmtDist(2 * t.R)} de lado; colores del mapa: verde bajo, marrón alto.</p>`;
   }
   let cover = "";
   if (g) {
@@ -299,7 +299,7 @@ function buildReport() {
     <h3>Sismos de mayor magnitud (300 km, último año)</h3>${quakesHtml}
     ${sec(8, "Puntos de referencia")}${own}${refs.length ? `<ul>${refs.map(r => `<li><b>${esc(r.title)}</b> a ${fmtDist(r.d)} al ${rumbo(bearing(P, r))}${r.desc ? ` — ${esc(r.desc)}` : ""}</li>`).join("")}</ul>` : `<p class="note">${S.errs.wiki ? "No se pudo consultar Wikipedia." : "Sin lugares documentados en 10 km."}</p>`}
     ${sec(9, "Conclusiones y recomendaciones")}<ol>${rec.map(r => `<li>${esc(r)}</li>`).join("")}</ol>
-    ${sec(10, "Fuentes y limitaciones")}<table>${status("terrain", "Elevación (Open‑Meteo / Copernicus 90 m)")}${status("weather", "Meteorología (Open‑Meteo)")}${status("ground", "Uso del suelo y vías (OpenStreetMap)")}${status("feats", "Elementos del entorno (OpenStreetMap)")}${status("quakes", "Sismos (USGS)")}${status("info", "Información del lugar (Wikipedia / Wikidata)")}${status("wiki", "Lugares cercanos (Wikipedia)")}</table>
+    ${sec(10, "Fuentes y limitaciones")}<table>${status("terrain", `Elevación (${t && t.src ? t.src : "SRTM 30 m / Copernicus 90 m"})`)}${status("weather", "Meteorología (Open‑Meteo)")}${status("ground", "Uso del suelo y vías (OpenStreetMap)")}${status("feats", "Elementos del entorno (OpenStreetMap)")}${status("quakes", "Sismos (USGS)")}${status("info", "Información del lugar (Wikipedia / Wikidata)")}${status("wiki", "Lugares cercanos (Wikipedia)")}</table>
     <p class="note">Reporte generado automáticamente a partir de fuentes abiertas el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" })}. Los datos de OpenStreetMap y Wikipedia pueden estar incompletos o desactualizados y el modelo de elevación tiene resolución de 90 m: verificar en el terreno antes de tomar decisiones.</p>
     <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div>
   </article>`;
@@ -446,7 +446,7 @@ function buildBrief() {
     <div class="cols2"><div><h3 style="margin-top:0">Pronóstico 72 h</h3>${wx}<h3>Movilidad</h3>${mob}</div><div><h3 style="margin-top:0">Apoyo e hidrografía (${fmtDist(S.radius)})</h3>${sup}</div></div>
     <h2>4. Apreciación</h2>
     <div class="apr">${apr.paras.map(p => `<p>${p}</p>`).join("")}${apr.verdict}</div>
-    <p class="note" style="margin-top:8px">Fuentes: Copernicus 90 m y meteorología (Open‑Meteo), OpenStreetMap, Wikipedia/Wikidata, USGS. Generado el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }).replace(/\.$/, "")}.${["terrain", "weather", "ground", "feats", "quakes"].some(k => S.errs[k]) ? " Algunas fuentes no respondieron; ver factores sin dato." : ""}</p>
+    <p class="note" style="margin-top:8px">Fuentes: elevación ${esc(t && t.src ? t.src : "SRTM / Copernicus")}, meteorología (Open‑Meteo), OpenStreetMap, Wikipedia/Wikidata, USGS. Generado el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }).replace(/\.$/, "")}.${["terrain", "weather", "ground", "feats", "quakes"].some(k => S.errs[k]) ? " Algunas fuentes no respondieron; ver factores sin dato." : ""}</p>
     <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div></div>
   </article>`;
 }

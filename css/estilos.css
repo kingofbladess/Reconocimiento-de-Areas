@@ -222,9 +222,15 @@ dl { margin: 0; }
 .seg button { border: 0; background: none; padding: 0 10px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .seg button:hover { background: var(--soft); }
 .seg button[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--tint-line); }
-.readout { position: fixed; z-index: 900; left: 50%; transform: translateX(-50%); bottom: 34px; background: var(--sheet); border-radius: 8px; padding: 5px 10px; font: 12px var(--f-mono); box-shadow: var(--shadow); font-variant-numeric: tabular-nums; pointer-events: none; }
+.readout { position: fixed; z-index: 900; left: 50%; transform: translateX(-50%); top: 14px; background: var(--sheet); border-radius: 8px; padding: 5px 10px; font: 12px var(--f-mono); box-shadow: var(--shadow); font-variant-numeric: tabular-nums; pointer-events: none; }
 .measure-box { position: fixed; z-index: 900; left: max(12px, env(safe-area-inset-left)); bottom: 84px; background: var(--sheet); border-radius: 10px; padding: 8px 12px; font-size: 14px; box-shadow: var(--shadow); }
-.measure-box { max-width: min(440px, calc(100vw - 24px)); }
+.measure-box { width: min(460px, calc(100vw - 24px)); }
+.mb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mb-row span { flex: 1 1 180px; color: var(--muted); font-size: 13px; }
+.mb-row .copy:disabled { opacity: .45; cursor: default; }
+#profileBox:not(:empty) { margin-top: 6px; }
+.mvert { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--gold); box-shadow: 0 1px 4px rgba(0,0,0,.5); cursor: grab; }
+.leaflet-container.measuring, .leaflet-container.measuring.leaflet-grab { cursor: crosshair; }
 .measure-box b { font-family: var(--f-mono); }
 #profileBox:not(:empty) { margin-top: 8px; }
 .toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: var(--ink); color: var(--sheet); padding: 9px 16px; border-radius: 10px; z-index: 3000; font-size: 14px; box-shadow: var(--shadow); max-width: calc(100vw - 32px); }
@@ -258,6 +264,58 @@ dl { margin: 0; }
 .leaflet-control-zoom { border: 0 !important; box-shadow: var(--shadow) !important; }
 .leaflet-control-zoom a { background: var(--sheet) !important; color: var(--ink) !important; border-color: var(--line) !important; }
 .leaflet-control-zoom a:hover { background: var(--soft) !important; }
+.leaflet-touch .leaflet-control-zoom a, .map-btns a { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
+.leaflet-bar.map-btns { border: 0; box-shadow: var(--shadow); border-radius: 8px; overflow: hidden; }
+.map-btns a { display: grid; place-items: center; background: var(--sheet); color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
+.map-btns a:last-child { border-bottom: 0; }
+.map-btns a:hover { background: var(--soft); color: var(--ink); }
+.map-btns a.mb-3d { font: 700 13px var(--f-display); color: var(--tint-ink); background: var(--tint); }
+.map-btns svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+/* Menú del mapa (clic derecho / mantener presionado) */
+.ctx { position: fixed; z-index: 2500; min-width: 210px; background: var(--sheet); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display: grid; }
+.ctx-head { padding: 6px 10px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; display: grid; }
+.ctx-head b { font: 500 13px var(--f-mono); }
+.ctx-head span { color: var(--muted); font-size: 13px; }
+.ctx button { text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.ctx button:hover, .ctx button:focus-visible { background: var(--tint); color: var(--tint-ink); }
+.ctx-note { padding: 6px 10px; color: var(--warn); font-size: 13px; }
+
+/* Leyenda de pendientes */
+.slope-legend { position: fixed; z-index: 900; left: max(12px, env(safe-area-inset-left)); top: 186px; background: var(--sheet); border-radius: 10px; box-shadow: var(--shadow); padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.slope-legend b { font-size: 12px; }
+.slope-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.slope-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Terreno interactivo en la ficha */
+.terrmap { cursor: crosshair; touch-action: none; }
+.terr-hover { font: 12px/1.35 var(--f-body); color: var(--muted); margin-top: 6px; min-height: 2.6em; }
+.terr-acts { display: flex; gap: 8px; margin: 12px 0 2px; flex-wrap: wrap; }
+.terr-acts .btn[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); border-color: var(--tint-line); }
+.prof.live { cursor: crosshair; touch-action: pan-y; }
+
+/* Vista 3D */
+.v3d { position: fixed; inset: 0; z-index: 3500; background: #0a111d; }
+#v3dMap { position: absolute; inset: 0; }
+.v3d-bar { position: absolute; z-index: 2; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: 64px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; pointer-events: none; }
+.v3d-bar > * { pointer-events: auto; }
+.v3d-bar .btn { height: 40px; box-shadow: var(--shadow); border: 0; }
+.v3d-exag { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; background: var(--sheet); border-radius: 10px; box-shadow: var(--shadow); font-size: 14px; }
+.v3d-exag input { width: 110px; accent-color: var(--accent); }
+.v3d-exag b { font: 500 13px var(--f-mono); min-width: 3.2em; }
+.v3d-load { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--sheet); padding: 12px 18px; border-radius: 12px; box-shadow: var(--shadow); }
+.v3d-foot { position: absolute; z-index: 2; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); right: 150px; display: flex; gap: 8px; flex-wrap: wrap; pointer-events: none; }
+.v3d-foot span { background: color-mix(in srgb, var(--sheet) 92%, transparent); border-radius: 8px; padding: 5px 10px; font-size: 12px; box-shadow: var(--shadow-sm); }
+#v3dRead, #v3dHud { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+#v3dHud:empty { display: none; }
+.v3d-help { color: var(--muted); }
+.v3d .maplibregl-ctrl-group { border-radius: 8px; box-shadow: var(--shadow); }
+.v3d .maplibregl-ctrl-top-right { top: max(2px, env(safe-area-inset-top)); }
+.v3d .maplibregl-popup-content { background: var(--sheet); color: var(--ink); border-radius: 10px; font: 13px var(--f-body); padding: 10px 12px; box-shadow: var(--shadow); }
+.v3d .maplibregl-popup-tip { border-top-color: var(--sheet); border-bottom-color: var(--sheet); }
+.v3d .maplibregl-popup-close-button { color: var(--muted); font-size: 16px; }
+.pin3d .pin { transform: rotate(-45deg) translate(-4px, -4px); }
+body.in3d .finder, body.in3d .sheet, body.in3d .tools, body.in3d .readout, body.in3d .measure-box, body.in3d .slope-legend { visibility: hidden; }
 .pin { width: 24px; height: 24px; border-radius: 50% 50% 50% 0; background: var(--gold); transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
 .wpin { width: 22px; height: 22px; border-radius: 50%; background: #fff; color: #222; font: 700 12px/22px Georgia, serif; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.5); border: 2px solid var(--accent); }
 
@@ -268,7 +326,19 @@ dl { margin: 0; }
   .sheet.min { height: 64px; }
   .tools { bottom: calc(50% + 10px); }
   .sheet.min ~ .tools { bottom: 76px; }
-  .readout, .measure-box { display: none; }
+  .readout { display: none; }
+  .measure-box { top: 128px; bottom: auto; right: 64px; width: auto; }
+  .slope-legend { top: 250px; left: auto; right: 12px; padding: 6px 9px; font-size: 11px; gap: 3px; }
+  .slope-legend b { font-size: 11px; }
+  .mb-row span { display: none; }
+  .v3d-bar { right: 56px; gap: 6px; flex-wrap: nowrap; overflow-x: auto; pointer-events: auto; padding-bottom: 6px; scrollbar-width: none; }
+  .v3d-bar > * { flex: none; }
+  #v3dNorth, #v3dRead { display: none; }
+  .v3d-foot { bottom: 52px; }
+  .v3d-bar .seg button { padding: 0 8px; font-size: 13px; }
+  .v3d-exag input { width: 80px; }
+  .v3d-help { display: none; }
+  .v3d-foot { right: 110px; }
   .hero { aspect-ratio: 16 / 8; }
   .leaflet-top.leaflet-right { top: 120px; }
 }

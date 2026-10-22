@@ -76,7 +76,15 @@ async function selectPoint(lat, lon, opts = {}) {
   loadInfo(id);
 }
 let pickNew = false; // "Agregar lugar": el siguiente toque en el mapa abre el formulario
-map.on("click", e => { if (measuring) return addMeasure(e.latlng); const form = pickNew; pickNew = false; selectPoint(e.latlng.lat, e.latlng.lng, { form }); });
+// Un toque elige el punto; se espera un instante para que el doble toque solo acerque el mapa y no abra dos fichas
+let clickTimer = 0;
+map.on("click", e => {
+  if (ctxOpen()) return closeCtx();
+  if (measuring) return addMeasure(e.latlng);
+  clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => { const form = pickNew; pickNew = false; selectPoint(e.latlng.lat, e.latlng.lng, { form }); }, 260);
+});
+map.on("dblclick zoomstart", () => clearTimeout(clickTimer));
 
 async function reverse(id) {
   try {

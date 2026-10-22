@@ -21,6 +21,8 @@ sheetBody.addEventListener("click", async e => {
   if (act) {
     const a = act.dataset.act;
     if (a === "analyze") return openReport();
+    if (a === "view3d") return open3D();
+    if (a === "slopes") { const on = !map.hasLayer(slopeLayer); setSlopes(on); act.setAttribute("aria-pressed", on); if (on && map.getZoom() < 13 && radiusCircle) map.fitBounds(radiusCircle.getBounds(), { padding: [30, 30] }); return; }
     if (a === "save") return renderForm(null);
     if (a === "edit") return renderForm(S.custom);
     if (a === "addfiles") { const fi = $("#fileHere"); if (fi) { sheetBody.scrollTo({ top: $("#s-archivos").offsetTop - 44 }); fi.click(); } return; }

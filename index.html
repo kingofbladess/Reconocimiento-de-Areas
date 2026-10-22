@@ -42,16 +42,36 @@
     <button data-layer="topo" aria-pressed="false">Relieve</button>
     <button data-layer="sombras" aria-pressed="false">Sombras</button>
   </div>
-  <button class="tool" id="btnMeasure" aria-pressed="false" title="Medir distancia y ver el perfil del terreno"><svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>Medir</button>
+  <button class="tool" id="btnSlope" aria-pressed="false" title="Colorea las laderas según su pendiente (tecla P)"><svg viewBox="0 0 24 24"><path d="M3 20h18L14 6l-3 5-2-2z"/><path d="M8 20l4-6"/></svg>Pendientes</button>
+  <button class="tool" id="btnMeasure" aria-pressed="false" title="Medir distancia y ver el perfil del terreno (tecla M)"><svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>Medir</button>
   <button class="tool" id="btnMine" title="Mis lugares guardados"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 7v5M9.5 9.5h5"/></svg>Mis lugares <span id="mineCount"></span></button>
   <button class="tool" id="btnInstall" hidden title="Instalar como aplicación"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Instalar</button>
   <button class="tool" id="btnVE" title="Ver toda Venezuela"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>País</button>
 </div>
-<div class="measure-box" id="measureBox" hidden>Toca el mapa para trazar puntos · <b id="measureVal">0 m</b>
-  <button class="copy" id="measureProfile">Perfil del terreno</button> <button class="copy" id="measureClear">Borrar</button>
+<div class="measure-box" id="measureBox" hidden><div class="mb-row"><span>Toca el mapa para trazar · arrastra un punto para moverlo</span><b id="measureVal">0 m</b>
+  <button class="copy" id="measureUndo" disabled>Deshacer</button><button class="copy" id="measureClear">Borrar</button><button class="copy" id="measureClose" aria-label="Terminar medición">✕</button></div>
   <div id="profileBox"></div></div>
+<div class="slope-legend" id="slopeLegend" hidden></div>
+<div class="ctx" id="ctx" hidden role="menu"></div>
 <div class="readout" id="readout" hidden></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<div class="v3d" id="v3d" hidden role="dialog" aria-label="Vista 3D del terreno">
+  <div id="v3dMap"></div>
+  <div class="v3d-bar">
+    <button class="btn" id="v3dClose" title="Volver al mapa (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Mapa 2D</button>
+    <div class="seg" id="v3dBase" role="group" aria-label="Imagen del terreno"><button data-b="satelite" aria-pressed="true">Satélite</button><button data-b="relieve" aria-pressed="false">Relieve</button><button data-b="mapa" aria-pressed="false">Mapa</button></div>
+    <div class="seg" id="v3dView" role="group" aria-label="Inclinación de la cámara"><button data-p="0" title="Vista desde arriba">Cenital</button><button data-p="55">Oblicua</button><button data-p="78" title="A ras del terreno">Rasante</button></div>
+    <label class="v3d-exag" title="Exagera la altura del relieve">Relieve <input type="range" id="v3dExag" min="1" max="4" step="0.25" value="1.5"> <b id="v3dExagVal">×1,5</b></label>
+    <button class="tool" id="v3dShade" aria-pressed="true">Sombras</button>
+    <button class="tool" id="v3dOrbit" aria-pressed="false" title="Girar la cámara alrededor del centro">Girar</button>
+    <button class="tool" id="v3dNorth" title="Orientar al norte">Norte</button>
+    <button class="tool" id="v3dCenter" title="Volver al punto elegido">Al punto</button>
+  </div>
+  <div class="v3d-load" id="v3dLoad" hidden>Cargando vista 3D…</div>
+  <div class="v3d-foot"><span id="v3dRead">Mueve el cursor sobre el terreno</span><span id="v3dHud"></span>
+    <span class="v3d-help">Arrastra para mover · clic derecho o Ctrl + arrastrar para girar e inclinar · en el teléfono, dos dedos para girar e inclinar</span></div>
+</div>
 
 <div class="album" id="album" hidden>
   <div class="album-top"><h2 id="albumTitle"></h2><button class="btn" id="albumClose">Cerrar</button></div>
@@ -78,6 +98,7 @@
 <script src="js/mapa.js"></script>
 <script src="js/geo.js"></script>
 <script src="js/red.js"></script>
+<script src="js/relieve.js"></script>
 <script src="js/busqueda.js"></script>
 <script src="js/fuentes.js"></script>
 <script src="js/entorno.js"></script>
@@ -88,6 +109,7 @@
 <script src="js/visor.js"></script>
 <script src="js/herramientas.js"></script>
 <script src="js/reporte.js"></script>
+<script src="js/vista3d.js"></script>
 <script src="js/inicio.js"></script>
 </body>
 </html>
