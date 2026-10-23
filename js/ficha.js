@@ -8,7 +8,9 @@ function renderEmpty() {
   sheetBody.innerHTML = `<div class="hero"><div class="shade"></div><div class="cap"><h2>Explora Venezuela</h2><p>Del Caribe a la Gran Sabana, punto por punto.</p></div></div>
     <div class="empty-sheet"><h2>¿Cómo se usa?</h2><p>Elige un punto dentro del país y verás su ficha completa.</p>
     <ol><li>Busca por nombre o pega coordenadas, por ejemplo <b>10.5061, -66.9146</b>.</li><li>O toca un lugar destacado, o cualquier punto del mapa.</li><li>Revisa terreno, clima, fotos, historia, puentes, ríos y todo lo que hay alrededor.</li>
-    <li>Guarda tus propios lugares con fotos y PDF desde <b>Mis lugares</b>.</li></ol></div>`;
+    <li>Guarda tus propios lugares con fotos y PDF desde <b>Mis lugares</b>.</li>
+    <li>Antes de salir a campo, descarga la zona con <b>Sin conexión</b> para tener mapa, relieve y fichas sin señal.</li></ol></div>`;
+  setSheet("peek", "Explora Venezuela · toca para ver cómo se usa");
 }
 function renderSheet() {
   S.view = "point";
@@ -24,6 +26,7 @@ function renderSheet() {
     <section class="blk" id="s-entorno"></section>
     <section class="blk" id="s-sismos"></section>`;
   sheetBody.scrollTop = 0;
+  applyFolds();
   renderHead(); renderNav(); renderFiles(); renderCoords(); renderTerrain(); renderWeather(); renderPhotos(); renderWiki(); renderFeats(); renderQuakes();
 }
 function renderNav() {
@@ -36,6 +39,7 @@ function renderHead() {
   const el = $("#head"); if (!el) return;
   const p = S.place, ad = adminOf(p), info = S.info, my = S.custom;
   const name = (my && my.name) || S.title || (p && (p.name || (p.display_name || "").split(",")[0])) || "Punto seleccionado";
+  S.name = name; setPeek(name);
   const line = [ad.sector, ad.localidad, ad.municipio, ad.estado].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(" · ");
   const myImg = my && myFiles(my).find(f => f.type.startsWith("image/"));
   let img = null, credit = "";
@@ -60,6 +64,7 @@ function renderHead() {
     <div class="hero">${img ? `<img src="${esc(img)}" alt="${esc(name)}" onerror="this.remove()">` : ""}<div class="shade"></div>${credit}
       <button class="close" id="closeSheet" aria-label="Cerrar ficha">✕</button>
       <div class="cap"><h2>${my ? "★ " : ""}${esc(name)}</h2><p>${esc(line || (p ? p.display_name : "Buscando dirección…"))}</p></div></div>
+    ${NET.staleAt ? `<div class="stale">Sin conexión: datos guardados el ${new Date(NET.staleAt).toLocaleString("es-VE", { dateStyle: "medium", timeStyle: "short" })} (pueden no estar al día)</div>` : ""}
     <div class="actions">${acts}<button class="btn" data-act="share">Copiar enlace</button></div>
     <section class="blk" id="s-resumen"><h3>${my ? "Mi lugar" : "Sobre este lugar"}</h3>${about}</section>`;
 }
@@ -79,7 +84,7 @@ function renderCoords() {
     <div class="kv"><dt>Municipio</dt><dd>${esc(ad.municipio || "—")}</dd><span></span></div>
     ${ad.localidad ? `<div class="kv"><dt>Localidad</dt><dd>${esc(ad.localidad)}</dd><span></span></div>` : ""}
     ${S.place && S.place.address && S.place.address.road ? `<div class="kv"><dt>Vía</dt><dd>${esc(S.place.address.road)}</dd><span></span></div>` : ""}
-    <div class="kv"><dt>Hora local</dt><dd>${S.weather ? `UTC${fmtOffset(S.weather.utc_offset_seconds)}` : "UTC-04:00"}</dd><span></span></div></dl>
+    <div class="kv"><dt>Hora local</dt><dd>${S.weather && S.weather.utc_offset_seconds != null ? `UTC${fmtOffset(S.weather.utc_offset_seconds)}` : "UTC-04:00"}</dd><span></span></div></dl>
     <div class="links">
       <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" rel="noopener">Google Maps</a>
       <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}" target="_blank" rel="noopener">Street View</a>
@@ -92,6 +97,7 @@ function renderWeather() {
   if (S.errs.weather) { el.innerHTML = `<h3>Meteorología</h3>${errBox("weather", S.errs.weather)}`; return; }
   const w = S.weather;
   if (!w) { el.innerHTML = `<h3>Meteorología</h3><div class="loading">Consultando el clima…</div>`; return; }
+  if (!w.current || !w.daily || !w.hourly) { el.innerHTML = `<h3>Meteorología</h3>${errBox("weather", "Open‑Meteo respondió sin datos para este punto.")}`; return; }
   const c = w.current, u = w.current_units, [desc, ico] = wmo(c.weather_code), d = w.daily;
   const vis = c.visibility != null ? (c.visibility >= 1000 ? `${(c.visibility / 1000).toFixed(1)} km` : `${Math.round(c.visibility)} m`) : "—";
   const hm = s => s ? s.slice(11, 16) : "—";

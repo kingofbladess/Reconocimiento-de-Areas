@@ -11,19 +11,44 @@
 <link rel="icon" href="iconos/icono-192.png" type="image/png">
 <link rel="apple-touch-icon" href="iconos/icono-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<!-- Las fuentes no bloquean la primera pintura: mientras llegan se usan las del sistema -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<!-- Leaflet va incluido en la app (vendor/): no depende de unpkg para abrir ni para funcionar sin conexión -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/estilos.css">
+<script defer src="vendor/leaflet/leaflet.js"></script>
+<!-- Módulos de la app, en orden de dependencia (ver README.md). defer: se descargan en paralelo y corren al terminar de leer la página -->
+<script defer src="js/nucleo.js"></script>
+<script defer src="js/mapa.js"></script>
+<script defer src="js/geo.js"></script>
+<script defer src="js/red.js"></script>
+<script defer src="js/relieve.js"></script>
+<script defer src="js/busqueda.js"></script>
+<script defer src="js/fuentes.js"></script>
+<script defer src="js/entorno.js"></script>
+<script defer src="js/terreno.js"></script>
+<script defer src="js/mis-lugares.js"></script>
+<script defer src="js/ficha.js"></script>
+<script defer src="js/interfaz.js"></script>
+<script defer src="js/interaccion.js"></script>
+<script defer src="js/visor.js"></script>
+<script defer src="js/herramientas.js"></script>
+<script defer src="js/sin-conexion.js"></script>
+<script defer src="js/reporte.js"></script>
+<script defer src="js/vista3d.js"></script>
+<script defer src="js/inicio.js"></script>
 </head>
 <body>
 <div id="map"></div>
 
-<div class="finder">
+<div class="finder" id="finder">
   <div class="finder-card">
     <div class="brand"><img class="mark" src="iconos/logo.svg" alt="" width="38" height="38"><div><h1>Reconocimiento Venezuela</h1><small>Ubicación, clima, fotos y entorno de cualquier punto del país</small></div></div>
     <form class="search" id="searchForm" autocomplete="off">
       <input id="q" type="search" placeholder="Busca un lugar o pega coordenadas" aria-label="Buscar lugar o coordenadas en Venezuela">
-      <button class="btn primary" type="submit">Buscar</button>
+      <button class="btn primary" type="submit" aria-label="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="lbl">Buscar</span></button>
     </form>
     <div class="featured" id="featured" aria-label="Lugares destacados"></div>
     <div class="results" id="results" hidden></div>
@@ -31,22 +56,24 @@
 </div>
 
 <aside class="sheet" id="sheet" aria-label="Ficha del lugar">
-  <button class="grab" id="grab" aria-label="Expandir o contraer la ficha"></button>
+  <button class="grab" id="grab" aria-label="Expandir o contraer la ficha"><span class="peek" id="peek"></span></button>
   <div class="sheet-scroll" id="sheetScroll"></div>
 </aside>
 
-<div class="tools">
+<div class="tools" id="tools">
+  <button class="tool" id="btnLayers" aria-expanded="false" title="Tipo de mapa"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="lbl">Capas</span></button>
   <div class="seg" id="layers" role="group" aria-label="Tipo de mapa">
     <button data-layer="satelite" aria-pressed="true">Satélite</button>
     <button data-layer="mapa" aria-pressed="false">Mapa</button>
     <button data-layer="topo" aria-pressed="false">Relieve</button>
     <button data-layer="sombras" aria-pressed="false">Sombras</button>
   </div>
-  <button class="tool" id="btnSlope" aria-pressed="false" title="Colorea las laderas según su pendiente (tecla P)"><svg viewBox="0 0 24 24"><path d="M3 20h18L14 6l-3 5-2-2z"/><path d="M8 20l4-6"/></svg>Pendientes</button>
-  <button class="tool" id="btnMeasure" aria-pressed="false" title="Medir distancia y ver el perfil del terreno (tecla M)"><svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>Medir</button>
-  <button class="tool" id="btnMine" title="Mis lugares guardados"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 7v5M9.5 9.5h5"/></svg>Mis lugares <span id="mineCount"></span></button>
-  <button class="tool" id="btnInstall" hidden title="Instalar como aplicación"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Instalar</button>
-  <button class="tool" id="btnVE" title="Ver toda Venezuela"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>País</button>
+  <button class="tool" id="btnSlope" aria-pressed="false" title="Colorea las laderas según su pendiente (tecla P)"><svg viewBox="0 0 24 24"><path d="M3 20h18L14 6l-3 5-2-2z"/><path d="M8 20l4-6"/></svg><span class="lbl">Pendientes</span></button>
+  <button class="tool" id="btnMeasure" aria-pressed="false" title="Medir distancia y ver el perfil del terreno (tecla M)"><svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span class="lbl">Medir</span></button>
+  <button class="tool" id="btnMine" title="Mis lugares guardados"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 7v5M9.5 9.5h5"/></svg><span class="lbl">Mis lugares</span> <span class="cnt" id="mineCount"></span></button>
+  <button class="tool" id="btnOffline" title="Mapas y datos para usar sin conexión"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19.5 10 4 4 0 0 1 18 18z"/><path d="M12 10v6M9.5 13.5 12 16l2.5-2.5"/></svg><span class="lbl">Sin conexión</span></button>
+  <button class="tool" id="btnInstall" hidden title="Instalar como aplicación"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="lbl">Instalar</span></button>
+  <button class="tool" id="btnVE" title="Ver toda Venezuela"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">País</span></button>
 </div>
 <div class="measure-box" id="measureBox" hidden><div class="mb-row"><span>Toca el mapa para trazar · arrastra un punto para moverlo</span><b id="measureVal">0 m</b>
   <button class="copy" id="measureUndo" disabled>Deshacer</button><button class="copy" id="measureClear">Borrar</button><button class="copy" id="measureClose" aria-label="Terminar medición">✕</button></div>
@@ -54,6 +81,7 @@
 <div class="slope-legend" id="slopeLegend" hidden></div>
 <div class="ctx" id="ctx" hidden role="menu"></div>
 <div class="readout" id="readout" hidden></div>
+<div class="net" id="net" hidden role="status">Sin conexión</div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 
 <div class="v3d" id="v3d" hidden role="dialog" aria-label="Vista 3D del terreno">
@@ -91,25 +119,5 @@
   <div class="lb-strip" id="lbStrip"></div>
 </div>
 
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Módulos de la app, en orden de dependencia (ver README.md) -->
-<script src="js/nucleo.js"></script>
-<script src="js/mapa.js"></script>
-<script src="js/geo.js"></script>
-<script src="js/red.js"></script>
-<script src="js/relieve.js"></script>
-<script src="js/busqueda.js"></script>
-<script src="js/fuentes.js"></script>
-<script src="js/entorno.js"></script>
-<script src="js/terreno.js"></script>
-<script src="js/mis-lugares.js"></script>
-<script src="js/ficha.js"></script>
-<script src="js/interaccion.js"></script>
-<script src="js/visor.js"></script>
-<script src="js/herramientas.js"></script>
-<script src="js/reporte.js"></script>
-<script src="js/vista3d.js"></script>
-<script src="js/inicio.js"></script>
 </body>
 </html>

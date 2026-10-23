@@ -119,7 +119,11 @@ async function loadWeather(id) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${S.point.lat}&longitude=${S.point.lon}&timezone=auto&forecast_days=7`
     + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility"
     + "&hourly=temperature_2m,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max";
-  try { const d = await getJSON(url); if (id !== reqId) return; S.weather = d; }
+  try {
+    const d = await getJSON(url); if (id !== reqId) return;
+    if (!d.current || !d.daily || !d.hourly) throw new Error("Open‑Meteo respondió sin datos para este punto.");
+    S.weather = d;
+  }
   catch (e) { if (id === reqId) S.errs.weather = e.message; }
   if (id === reqId) { S.busy.weather = false; renderWeather(); renderCoords(); }
 }

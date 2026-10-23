@@ -53,7 +53,7 @@ async function loadTerrain(id) {
   if (id === reqId) { S.busy.terrain = false; renderTerrain(); renderCoords(); }
 }
 function groundQuery(lat, lon) {
-  return `[out:json][timeout:30];
+  return `[out:json][timeout:25];
 is_in(${lat},${lon})->.a;
 area.a[~"^(landuse|natural|leisure|boundary)$"~"."]->.b;
 .b out tags;
@@ -67,7 +67,9 @@ async function loadGround(id) {
   S.busy.ground = true; S.errs.ground = null; S.ground = null; renderTerrain();
   const { lat, lon } = S.point, body = "data=" + encodeURIComponent(groundQuery(lat, lon));
   let data = null, lastErr = null;
-  for (const ep of OVERPASS) { try { data = await getJSON(ep, { method: "POST", body, headers: FORM }, 40000, 1); break; } catch (e) { lastErr = e; } }
+  for (const [i, ep] of OVERPASS.entries()) {
+    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
+  }
   if (id !== reqId) return;
   S.busy.ground = false;
   if (!data) { S.errs.ground = (lastErr && lastErr.message) || "No se pudo consultar OpenStreetMap"; renderTerrain(); return; }

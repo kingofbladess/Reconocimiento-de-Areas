@@ -16,7 +16,7 @@ function bboxAround(lat, lon, r) {
 }
 function overpassQuery(lat, lon, r) {
   const A = `(around:${r},${lat},${lon})`;
-  return `[out:json][timeout:40];
+  return `[out:json][timeout:25];
 (
 way${A}["bridge"]["bridge"!="no"];
 nwr${A}["man_made"="bridge"];
@@ -80,8 +80,8 @@ async function loadFeatures(id) {
   S.busy.feats = true; S.errs.feats = null; featLayer.clearLayers(); renderFeats();
   const { lat, lon } = S.point, r = S.radius, body = "data=" + encodeURIComponent(overpassQuery(lat, lon, r));
   let data = null, lastErr = null;
-  for (const ep of OVERPASS) {
-    try { data = await getJSON(ep, { method: "POST", body, headers: FORM }, 45000, 1); break; } catch (e) { lastErr = e; }
+  for (const [i, ep] of OVERPASS.entries()) { // un servidor tras otro; la copia guardada solo si fallan todos
+    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
   S.busy.feats = false;

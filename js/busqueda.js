@@ -7,23 +7,24 @@ $("#featured").innerHTML = FEATURED.map((f, i) => `<button data-f="${i}">${esc(f
 $("#featured").addEventListener("click", e => {
   const b = e.target.closest("button[data-f]"); if (!b) return;
   const [name, lat, lon, z] = FEATURED[+b.dataset.f];
-  $("#q").value = name;
+  $("#q").value = name; closeFinder();
   searchByName(name, { lat, lon, z });
 });
 $("#searchForm").addEventListener("submit", e => {
   e.preventDefault();
   const q = $("#q").value.trim(); if (!q) return;
   const c = parseCoords(q);
-  if (c) { resultsEl.hidden = true; return selectPoint(c.lat, c.lon, { zoom: 15 }); }
+  $("#q").blur(); // en el teléfono se cierra el teclado para ver el resultado
+  if (c) { resultsEl.hidden = true; closeFinder(); return selectPoint(c.lat, c.lon, { zoom: 15 }); }
   searchByName(q);
 });
 const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 let found = [];
 resultsEl.addEventListener("click", ev => {
   const m = ev.target.closest("button[data-mine]");
-  if (m) { resultsEl.hidden = true; return openMine(m.dataset.mine); }
+  if (m) { resultsEl.hidden = true; closeFinder(); return openMine(m.dataset.mine); }
   const b = ev.target.closest("button[data-i]"); if (!b) return;
-  const d = found[+b.dataset.i]; resultsEl.hidden = true;
+  const d = found[+b.dataset.i]; resultsEl.hidden = true; closeFinder();
   const bb = d.boundingbox && d.boundingbox.map(Number);
   selectPoint(+d.lat, +d.lon, { bounds: bb ? [[bb[0], bb[2]], [bb[1], bb[3]]] : null, place: d });
 });
@@ -40,7 +41,7 @@ async function searchByName(q, featured) {
       return selectPoint(featured.lat, featured.lon, { zoom: featured.z, place: near || null, title: q, force: true });
     }
     found = data;
-    if (!data.length && !mine.length) { resultsEl.innerHTML = '<div class="note">No encontré ese lugar en Venezuela. Prueba agregando el estado o la ciudad, por ejemplo “Plaza Bolívar, Mérida”.</div>'; return; }
+    if (!data.length && !mine.length) { resultsEl.innerHTML = offline() ? '<div class="note">Sin conexión: solo se pueden buscar coordenadas, tus lugares y búsquedas que ya hiciste antes.</div>' : '<div class="note">No encontré ese lugar en Venezuela. Prueba agregando el estado o la ciudad, por ejemplo “Plaza Bolívar, Mérida”.</div>'; return; }
     resultsEl.innerHTML = mineHtml + data.map((d, i) => `<button data-i="${i}"><b>${esc(d.name || d.display_name.split(",")[0])}</b><span>${esc(d.display_name.replace(/, Venezuela$/, ""))}</span></button>`).join("");
   } catch (err) {
     if (featured) { resultsEl.hidden = true; return selectPoint(featured.lat, featured.lon, { zoom: featured.z, title: q, force: true }); }
@@ -48,6 +49,8 @@ async function searchByName(q, featured) {
   }
 }
 document.addEventListener("click", e => { if (!e.target.closest(".finder")) resultsEl.hidden = true; });
+// Búsqueda vacía con el teclado abierto: muestra los lugares destacados y tus lugares
+$("#q").addEventListener("focus", () => openFinder());
 
 // ---------- Selección de punto ----------
 let reqId = 0;
@@ -55,16 +58,18 @@ async function selectPoint(lat, lon, opts = {}) {
   if (!opts.force && !inVenezuela(lat, lon)) { toast("Ese punto está fuera de Venezuela. Elige una ubicación dentro del país."); return; }
   const id = ++reqId;
   const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
+  NET.staleAt = null;
   Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, weather: null, air: null, info: null, photos: [], wiki: [], feats: [], quakes: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
   featLayer.clearLayers(); wikiLayer.clearLayers(); quakeLayer.clearLayers();
   if (pointMarker) pointMarker.setLatLng([lat, lon]);
   else pointMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true, zIndexOffset: 1000 }).addTo(map)
     .on("dragend", e => { const p = e.target.getLatLng(); selectPoint(p.lat, p.lng); });
   drawRadius();
-  if (opts.bounds) map.fitBounds(L.latLngBounds(opts.bounds).pad(0.1), { maxZoom: 16 });
-  else if (opts.zoom) map.setView([lat, lon], Math.max(map.getZoom(), opts.zoom));
+  // la ficha se abre a media altura en el teléfono, y el mapa se corre para que el punto no quede tapado por ella
+  if (opts.sheet !== false) setSheet("half");
+  if (opts.bounds) fitVisible(L.latLngBounds(opts.bounds).pad(0.1), 16);
+  else focusVisible([lat, lon], opts.zoom ? Math.max(map.getZoom(), opts.zoom) : map.getZoom());
   try { history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`); } catch (_) {}
-  $("#sheet").classList.remove("min");
   renderSheet();
   if (opts.form) renderForm(null);
   loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadWiki(id); loadFeatures(id); loadGround(id); loadQuakes(id);

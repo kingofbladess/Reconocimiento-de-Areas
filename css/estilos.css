@@ -51,7 +51,7 @@ a { color: var(--accent); }
 #map { position: fixed; inset: 0; background: var(--bg); }
 
 /* ---- Buscador flotante ---- */
-.finder { position: fixed; z-index: 1000; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); width: min(420px, calc(100vw - 24px)); }
+.finder { position: fixed; z-index: 1010; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); width: min(420px, calc(100vw - 24px)); }
 .finder-card { background: var(--sheet); border-radius: 14px; box-shadow: var(--shadow); padding: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; margin: 0 2px 10px; }
 .brand .mark { width: 38px; height: 38px; border-radius: 10px; flex: none; display: block; box-shadow: var(--shadow-sm); }
@@ -214,12 +214,12 @@ dl { margin: 0; }
 
 /* ---- Controles del mapa ---- */
 .tools { position: fixed; z-index: 900; left: max(12px, env(safe-area-inset-left)); bottom: 34px; display: flex; gap: 6px; flex-wrap: wrap; }
-.tool { height: 40px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; border: 0; background: var(--sheet); box-shadow: var(--shadow); cursor: pointer; font-size: 14px; font-weight: 500; }
+.tool { height: 38px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; border: 0; background: var(--sheet); box-shadow: var(--shadow); cursor: pointer; font-size: 14px; font-weight: 500; }
 .tool svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tool:hover { background: var(--soft); }
 .tool.on, .tool[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); box-shadow: var(--shadow), inset 0 0 0 1px var(--tint-line); }
 .seg { display: inline-flex; background: var(--sheet); border-radius: 10px; box-shadow: var(--shadow); padding: 3px; }
-.seg button { border: 0; background: none; padding: 0 10px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.seg button { border: 0; background: none; padding: 0 10px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .seg button:hover { background: var(--soft); }
 .seg button[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--tint-line); }
 .readout { position: fixed; z-index: 900; left: 50%; transform: translateX(-50%); top: 14px; background: var(--sheet); border-radius: 8px; padding: 5px 10px; font: 12px var(--f-mono); box-shadow: var(--shadow); font-variant-numeric: tabular-nums; pointer-events: none; }
@@ -232,7 +232,6 @@ dl { margin: 0; }
 .mvert { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--gold); box-shadow: 0 1px 4px rgba(0,0,0,.5); cursor: grab; }
 .leaflet-container.measuring, .leaflet-container.measuring.leaflet-grab { cursor: crosshair; }
 .measure-box b { font-family: var(--f-mono); }
-#profileBox:not(:empty) { margin-top: 8px; }
 .toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: var(--ink); color: var(--sheet); padding: 9px 16px; border-radius: 10px; z-index: 3000; font-size: 14px; box-shadow: var(--shadow); max-width: calc(100vw - 32px); }
 
 /* ---- Visor de fotos ---- */
@@ -319,31 +318,108 @@ body.in3d .finder, body.in3d .sheet, body.in3d .tools, body.in3d .readout, body.
 .pin { width: 24px; height: 24px; border-radius: 50% 50% 50% 0; background: var(--gold); transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
 .wpin { width: 22px; height: 22px; border-radius: 50%; background: #fff; color: #222; font: 700 12px/22px Georgia, serif; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.5); border: 2px solid var(--accent); }
 
+.grab { display: none; }
+/* Herramientas: en escritorio, fila con texto; el botón Capas solo existe en el teléfono */
+#btnLayers { display: none; }
+.tool .cnt { font: 600 11px var(--f-mono); }
+.tool .cnt:empty { display: none; }
+.net { position: fixed; z-index: 1100; left: 50%; transform: translateX(-50%); top: max(10px, env(safe-area-inset-top)); background: var(--warn); color: #fff; font: 600 12px var(--f-body); padding: 5px 12px; border-radius: 999px; box-shadow: var(--shadow); pointer-events: none; white-space: nowrap; }
+.stale { margin: 10px 16px 0; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--warn) 12%, var(--sheet)); color: var(--warn); font-size: 13px; }
+
+/* Secciones plegables: se toca el título */
+section.blk[id^="s-"] > h3 { cursor: pointer; user-select: none; }
+section.blk[id^="s-"] > h3::after { content: ""; flex: none; width: 8px; height: 8px; margin-left: auto; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-2px) rotate(45deg); transition: transform .15s; align-self: center; }
+section.blk.fold > h3 { margin-bottom: 0; }
+section.blk.fold > h3::after { transform: rotate(-45deg); }
+section.blk.fold > :not(h3) { display: none !important; }
+
+/* Panel sin conexión */
+.zrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.zrow b { display: block; font-weight: 600; font-size: 14px; }
+.zrow span span { color: var(--muted); font-size: 12px; }
+.zbtns { display: flex; gap: 6px; }
+.form label.chk { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--ink); }
+.form label.chk input { width: auto; }
+.bar { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; margin-bottom: 6px; }
+.bar i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.copy:disabled { opacity: .45; cursor: default; }
+
+/* ---- Teléfono y tabletas pequeñas ---- */
 @media (max-width: 860px) {
-  .finder { width: calc(100vw - 24px); }
+  /* Buscador: una sola barra; los destacados aparecen al tocarla */
+  .finder { top: max(8px, env(safe-area-inset-top)); left: 8px; width: calc(100vw - 16px); }
+  .finder-card { padding: 6px; border-radius: 12px; }
   .brand { display: none; }
-  .sheet { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 50%; border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom); }
-  .sheet.min { height: 64px; }
-  .tools { bottom: calc(50% + 10px); }
-  .sheet.min ~ .tools { bottom: 76px; }
+  .search input { padding: 8px 10px; font-size: 16px; } /* 16px evita el zoom automático de iOS */
+  .search .btn { padding: 0 11px; }
+  .search .btn .lbl { display: none; }
+  .featured { display: none; margin-top: 6px; }
+  .finder.open .featured { display: flex; }
+  .featured button { padding: 4px 10px; font-size: 12px; }
+  .results { max-height: 45vh; }
+
+  /* Ficha: hoja inferior deslizable (la altura la fija interfaz.js) */
+  .sheet { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 58px; border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom); transition: height .22s cubic-bezier(.2,.8,.3,1); }
+  .sheet.dragging { transition: none; }
+  .grab { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-height: 26px; padding: 7px 16px 4px; border: 0; background: var(--sheet); cursor: grab; flex: none; touch-action: none; }
+  .grab::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line); flex: none; }
+  .peek { font: 600 14px var(--f-display); color: var(--ink); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .peek:empty { display: none; }
+  .sheet[data-snap="peek"] .sheet-scroll { visibility: hidden; }
+  .hero { aspect-ratio: auto; height: 112px; }
+  .hero h2 { font-size: 19px; }
+  .hero p { font-size: 13px; }
+  .actions { padding: 10px 12px 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .actions .btn { font-size: 12.5px; padding: 6px 10px; flex: none; }
+  .nav { padding: 6px 8px; }
+  .nav a { font-size: 12px; padding: 4px 8px; }
+  section.blk { padding: 14px 12px; }
+  section.blk > h3 { font-size: 14px; margin-bottom: 10px; }
+  .facts { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+  .fact { padding: 6px 8px; }
+  .wx-temp { font-size: 40px; }
+  .empty-sheet { padding: 16px 14px; }
+  .empty-sheet h2 { font-size: 19px; }
+  .stale { margin: 8px 12px 0; }
+
+  /* Herramientas: columna de iconos a la izquierda, sin texto; Capas abre el selector de mapa */
+  .tools { top: calc(max(8px, env(safe-area-inset-top)) + 54px); bottom: auto; left: 8px; flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+  .tool { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; position: relative; }
+  .tool .lbl { display: none; }
+  .tool svg { width: 19px; height: 19px; }
+  .tool .cnt { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 10px; }
+  #btnLayers { display: inline-flex; }
+  .tools #layers { display: none; position: absolute; left: 46px; top: 0; flex-direction: column; align-items: stretch; min-width: 120px; }
+  .tools.layers-open #layers { display: flex; }
+  .seg button { height: 36px; text-align: left; padding: 0 12px; }
+
   .readout { display: none; }
-  .measure-box { top: 128px; bottom: auto; right: 64px; width: auto; }
-  .slope-legend { top: 250px; left: auto; right: 12px; padding: 6px 9px; font-size: 11px; gap: 3px; }
-  .slope-legend b { font-size: 11px; }
+  .net { top: auto; bottom: calc(var(--sheet-h, 58px) + 10px); }
+  .measure-box { top: calc(max(8px, env(safe-area-inset-top)) + 54px); bottom: auto; left: 54px; right: 54px; width: auto; padding: 6px 10px; }
+  .mb-row { gap: 6px; flex-wrap: nowrap; }
   .mb-row span { display: none; }
+  .mb-row b { margin-right: auto; }
+  .slope-legend { top: auto; bottom: calc(var(--sheet-h, 58px) + 34px); left: 8px; right: auto; padding: 6px 9px; font-size: 11px; gap: 3px; }
+  .slope-legend b { font-size: 11px; }
+
+  /* Controles del mapa: sin + / − (se usa el gesto de pellizco), 3D y ubicación pequeños a la derecha */
+  .leaflet-top.leaflet-right { top: calc(max(8px, env(safe-area-inset-top)) + 46px); }
+  .leaflet-right .leaflet-control { margin-right: 8px; }
+  .leaflet-control-zoom { display: none; }
+  .leaflet-touch .leaflet-control-zoom a, .map-btns a { width: 36px; height: 36px; line-height: 36px; }
+  .leaflet-bottom { bottom: var(--sheet-h, 58px); transition: bottom .22s; }
+  .leaflet-control-attribution { font-size: 9px; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .leaflet-control-scale { margin-bottom: 4px !important; }
+
   .v3d-bar { right: 56px; gap: 6px; flex-wrap: nowrap; overflow-x: auto; pointer-events: auto; padding-bottom: 6px; scrollbar-width: none; }
   .v3d-bar > * { flex: none; }
+  .v3d-bar .btn, .v3d-bar .tool, .v3d-exag { height: 36px; font-size: 13px; }
   #v3dNorth, #v3dRead { display: none; }
-  .v3d-foot { bottom: 52px; }
-  .v3d-bar .seg button { padding: 0 8px; font-size: 13px; }
+  .v3d-bar .seg button { padding: 0 8px; font-size: 13px; height: 30px; }
   .v3d-exag input { width: 80px; }
   .v3d-help { display: none; }
-  .v3d-foot { right: 110px; }
-  .hero { aspect-ratio: 16 / 8; }
-  .leaflet-top.leaflet-right { top: 120px; }
+  .v3d-foot { bottom: 52px; right: 110px; }
 }
-.grab { display: none; }
-@media (max-width: 860px) { .grab { display: block; width: 100%; height: 22px; border: 0; background: var(--sheet); cursor: pointer; flex: none; } .grab::before { content: ""; display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 
 /* Reporte operativo: hoja blanca sobre la app; al imprimir solo sale el reporte */

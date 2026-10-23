@@ -15,6 +15,8 @@ sheetBody.addEventListener("click", async e => {
     return;
   }
   if (e.target.closest("#closeSheet")) return closeSheet();
+  const fold = e.target.closest('section.blk[id^="s-"] > h3');
+  if (fold && !e.target.closest("a, button, select, input")) return toggleFold(fold.parentElement);
   const rt = e.target.closest("[data-retry]");
   if (rt && S.point) { const k = rt.dataset.retry; S.errs[k] = null; return RETRY[k](reqId); }
   const act = e.target.closest("[data-act]");
@@ -29,7 +31,7 @@ sheetBody.addEventListener("click", async e => {
     if (a === "share") { try { await navigator.clipboard.writeText(location.href); toast("Enlace copiado"); } catch (_) { toast(location.href); } return; }
     if (a === "cancel") { draft = null; return S.point ? renderSheet() : renderMineList(); }
     if (a === "delete") return deletePlace(draft.pl);
-    if (a === "new") { pickNew = true; toast("Toca en el mapa el punto del nuevo lugar"); if (matchMedia("(max-width: 860px)").matches) $("#sheet").classList.add("min"); return; }
+    if (a === "new") { pickNew = true; toast("Toca en el mapa el punto del nuevo lugar"); setSheet("peek"); return; }
     if (a === "export") return exportMine();
     if (a === "import") return $("#importFile").click();
     if (a === "closelist") return S.point ? renderSheet() : renderEmpty();
@@ -45,7 +47,7 @@ sheetBody.addEventListener("click", async e => {
   const al = e.target.closest("[data-album]");
   if (al) return openAlbum(al.dataset.album);
   const nav = e.target.closest(".nav a");
-  if (nav) { e.preventDefault(); const t = $(nav.getAttribute("href")); if (t) sheetBody.scrollTo({ top: t.offsetTop - 44 }); return; }
+  if (nav) { e.preventDefault(); const t = $(nav.getAttribute("href")); if (t) { unfold(t); if (isMobile()) setSheet("full"); sheetBody.scrollTo({ top: t.offsetTop - 44 }); } return; }
   const chip = e.target.closest(".chip");
   if (chip) { const k = chip.dataset.cat; S.hiddenCats.has(k) ? S.hiddenCats.delete(k) : S.hiddenCats.add(k); drawFeatures(); renderFeats(); return; }
   const ft = e.target.closest("[data-feat]");
@@ -78,8 +80,7 @@ sheetBody.addEventListener("drop", e => { const d = e.target.closest(".drop"); i
 $("#importFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) importMine(f); e.target.value = ""; });
 $("#btnMine").addEventListener("click", renderMineList);
 function flyOpen(ll, marker, z = 17) {
-  map.flyTo(ll, Math.max(map.getZoom(), z), { duration: 0.6 });
+  if (isMobile()) setSheet("peek"); // en el teléfono la ficha se baja para ver el elemento en el mapa
+  focusVisible(ll, Math.max(map.getZoom(), z), true);
   if (marker) setTimeout(() => marker.openPopup(), 650);
-  if (matchMedia("(max-width: 860px)").matches) $("#sheet").classList.add("min");
 }
-$("#grab").addEventListener("click", () => $("#sheet").classList.toggle("min"));

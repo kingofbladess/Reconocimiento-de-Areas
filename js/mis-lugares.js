@@ -45,7 +45,7 @@ function drawMine() {
     const icon = L.divIcon({ className: "", html: `<div class="mypin" style="background:var(${catOf(p).color});color:#fff">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
     L.marker([p.lat, p.lon], { icon, title: p.name, zIndexOffset: 500 }).on("click", () => openMine(p.id)).addTo(myLayer);
   }
-  $("#mineCount").textContent = MY.places.length ? `(${MY.places.length})` : "";
+  $("#mineCount").textContent = MY.places.length || "";
 }
 function openMine(id) {
   const p = MY.places.find(x => x.id === id); if (!p) return;
@@ -77,7 +77,7 @@ async function makeFileRec(file, placeId) {
 
 let draft = null; // formulario abierto: { pl, files: [nuevos], removed: Set }
 function renderForm(pl) {
-  S.view = "form"; $("#sheet").classList.remove("min");
+  S.view = "form"; setSheet("full", "Agregar a mis lugares");
   const p = S.place, base = pl || { name: S.title || (p && p.name) || "", cat: "otro", desc: "", notes: "", lat: S.point.lat, lon: S.point.lon };
   draft = { pl, files: [], removed: new Set() };
   sheetBody.innerHTML = `<div class="empty-sheet" style="padding-bottom:6px"><h2>${pl ? "Editar lugar" : "Agregar a mis lugares"}</h2>
@@ -149,7 +149,7 @@ async function addFilesToPlace(pl, list) {
   toast(errs.length ? errs.join(" · ") : `${n} archivo${n === 1 ? "" : "s"} guardado${n === 1 ? "" : "s"}`);
 }
 function renderMineList() {
-  S.view = "list"; $("#sheet").classList.remove("min");
+  S.view = "list"; setSheet("half", "Mis lugares");
   const rows = MY.places.map(p => { const im = myFiles(p).find(f => f.type.startsWith("image/")), n = p.files.length;
     return `<button class="mrow" data-mine="${esc(p.id)}"><span class="th" style="${im ? `background-image:url('${fileURL(im, true)}')` : ""}"></span>
       <span><b>${esc(p.name)}</b><span>${esc(catOf(p).label)} · ${n} archivo${n === 1 ? "" : "s"} · ${fmtDate(p.updated)}</span></span>

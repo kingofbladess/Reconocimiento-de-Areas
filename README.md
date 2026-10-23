@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.3.1 · octubre 2026
+Versión 3.5 · octubre 2026
 
 ## Cómo abrirla
 
@@ -52,6 +52,8 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 
   El botón **Ver versión detallada** muestra el reporte completo de varias páginas. Ambos se imprimen o guardan como PDF, o se descargan como archivo HTML.
 - **Mis lugares:** guarda puntos con nombre, categoría, notas, fotos y PDF. Exporta e importa respaldos.
+- **Sin conexión:** la app abre sin internet. Cada ficha que abres queda guardada (dirección, clima, terreno, entorno, fotos, Wikipedia) y sin señal se muestra con la fecha de la copia. El botón **Sin conexión** descarga la zona que ves (imagen satelital, relieve topográfico o sombras, más el modelo de elevación para altitudes, perfiles, pendientes y 3D), muestra las zonas guardadas y el espacio usado, y permite borrarlas. El mapa de calles de OpenStreetMap no se descarga en bloque porque su política lo prohíbe.
+- **En el teléfono:** la ficha es una hoja que se arrastra entre tres alturas (solo título, media pantalla y casi completa); las herramientas son una columna de íconos; los lugares destacados aparecen al tocar el buscador; y las secciones de la ficha se pliegan tocando su título.
 
 El mapa resalta Venezuela y no acepta puntos fuera del país. El contorno viene de OpenStreetMap, que deja fuera la Guayana Esequiba.
 
@@ -65,7 +67,7 @@ reconocimiento-venezuela/
 │   ├── nucleo.js           Utilidades, límites del país, lugares destacados, estado
 │   ├── mapa.js             Mapa base, capas y contorno de Venezuela
 │   ├── geo.js              Formatos de coordenadas y geometría
-│   ├── red.js              Peticiones con reintento y mensajes de error
+│   ├── red.js              Peticiones con reintento, mensajes de error y copia guardada para usar sin conexión
 │   ├── relieve.js          Modelo de elevación en teselas, altitud al instante y capa de pendientes
 │   ├── busqueda.js         Búsqueda y selección de un punto
 │   ├── fuentes.js          Wikipedia, Commons, clima, aire y sismos
@@ -73,12 +75,16 @@ reconocimiento-venezuela/
 │   ├── terreno.js          Relieve, pendientes, perfiles, suelo y accesos
 │   ├── mis-lugares.js      Lugares propios con fotos y PDF
 │   ├── ficha.js            Dibujo de la ficha lateral
+│   ├── interfaz.js         Ficha deslizable, buscador compacto, capas, secciones plegables, aviso sin conexión
 │   ├── interaccion.js      Clics, formularios y archivos de la ficha
 │   ├── visor.js            Visor de fotos y PDF
 │   ├── herramientas.js     Avisos, medición, menú del mapa, mi ubicación y atajos
+│   ├── sin-conexion.js     Descarga de zonas y panel Sin conexión
 │   ├── reporte.js          Botón Analizar: reporte operativo del área
 │   ├── vista3d.js          Vista 3D del terreno (MapLibre GL)
 │   └── inicio.js           Arranque e instalación
+├── datos/venezuela.json    Contorno del país (OpenStreetMap simplificado), incluido para abrir rápido
+├── vendor/leaflet/         Leaflet 1.9.4 incluido (no depende de unpkg)
 ├── sw.js                   Modo sin conexión (guarda la app y los mapas ya vistos)
 ├── manifest.webmanifest    Datos para instalar la app
 ├── vercel.json             Configuración de publicación en Vercel
@@ -95,7 +101,7 @@ Los archivos `js/` comparten variables globales y deben cargarse en el orden de 
 
 Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL (vista 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata, Wikimedia Commons y USGS (sismos).
 
-Hace falta internet para consultar datos nuevos. Sin conexión se abre la app con los mapas ya vistos y tus lugares guardados. Si un servicio está saturado, la sección muestra el aviso y un botón **Reintentar**.
+Hace falta internet para consultar datos nuevos. Sin conexión se abre la app con los mapas ya vistos o descargados, las fichas ya abiertas y tus lugares guardados. Si un servicio está saturado, la sección muestra el aviso y un botón **Reintentar**.
 
 ## Para quien la modifique
 
