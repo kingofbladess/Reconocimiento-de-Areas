@@ -5,8 +5,8 @@
 const sheetBody = $("#sheetScroll");
 function renderEmpty() {
   S.view = "empty";
-  sheetBody.innerHTML = `<div class="hero small"><div class="shade"></div><div class="cap"><h2>Explora Venezuela</h2><p>Del Caribe a la Gran Sabana, punto por punto.</p></div></div>
-    <div class="empty-sheet"><h2>¿Cómo se usa?</h2><p>Elige un punto dentro del país y verás su ficha completa.</p>
+  sheetBody.innerHTML = `<div class="hero small"><div class="shade"></div><div class="cap"><h2>Explora Venezuela</h2><p>Venezuela y Guyana, del Caribe a la Gran Sabana y el Esequibo.</p></div></div>
+    <div class="empty-sheet"><h2>¿Cómo se usa?</h2><p>Elige un punto en Venezuela o Guyana y verás su ficha completa.</p>
     <ol><li>Busca por nombre o pega coordenadas, por ejemplo <b>10.5061, -66.9146</b>.</li><li>O toca un lugar destacado, o cualquier punto del mapa.</li><li>Revisa terreno, clima, fotos, historia, puentes, ríos y todo lo que hay alrededor.</li>
     <li>Guarda tus propios lugares con fotos y PDF desde <b>Mis lugares</b>.</li>
     <li>Antes de salir a campo, descarga la zona con <b>Sin conexión</b> para tener mapa, relieve y fichas sin señal.</li></ol></div>`;

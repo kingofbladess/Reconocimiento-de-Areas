@@ -13,8 +13,9 @@ async function loadInfo(id) {
     if (S.custom) queries.push(S.custom.name);
     if (S.title) queries.push(S.title);
     if (S.place && S.place.name) queries.push(`${S.place.name} ${ad.estado}`);
-    if (ad.localidad) queries.push(`${ad.localidad} ${ad.estado} Venezuela`);
-    if (ad.municipio) queries.push(`${ad.municipio} ${ad.estado} Venezuela`);
+    const pais = S.place && S.place.address && S.place.address.country_code === "gy" ? "Guyana" : "Venezuela";
+    if (ad.localidad) queries.push(`${ad.localidad} ${ad.estado} ${pais}`);
+    if (ad.municipio) queries.push(`${ad.municipio} ${ad.estado} ${pais}`);
     for (const q of queries) {
       try { info = await fromWikiSearch(q); } catch (e) { lastErr = e; break; }
       if (info || id !== reqId) break;

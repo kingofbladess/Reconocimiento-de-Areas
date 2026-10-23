@@ -3,7 +3,7 @@
 
 // ---------- Herramientas ----------
 function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
-$("#btnVE").addEventListener("click", () => map.flyToBounds(veBounds, { duration: 0.8 }));
+$("#btnVE").addEventListener("click", () => map.flyToBounds(areaBounds, { duration: 0.8 }));
 let measuring = false, mPts = [], mLine = null, profTimer = 0;
 const mDots = L.layerGroup().addTo(map);
 const vIcon = L.divIcon({ className: "", html: '<div class="mvert"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
@@ -67,9 +67,9 @@ const ctx = $("#ctx");
 const ctxOpen = () => !ctx.hidden;
 function closeCtx() { ctx.hidden = true; }
 function openCtx(ll, x, y) {
-  const c = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`, inside = inVenezuela(ll.lat, ll.lng);
+  const c = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`, inside = inArea(ll.lat, ll.lng);
   ctx.innerHTML = `<div class="ctx-head"><b>${c}</b><span id="ctxAlt">Altitud…</span></div>
-    ${inside ? `<button data-c="open">Ver ficha de este punto</button><button data-c="3d">Ver aquí en 3D</button>` : `<div class="ctx-note">Fuera de Venezuela</div>`}
+    ${inside ? `<button data-c="open">Ver ficha de este punto</button><button data-c="3d">Ver aquí en 3D</button>` : `<div class="ctx-note">Fuera de Venezuela y Guyana</div>`}
     <button data-c="measure">${measuring ? "Agregar punto al trazo" : "Medir desde aquí"}</button>
     <button data-c="copy">Copiar coordenadas</button><button data-c="center">Centrar aquí</button>`;
   ctx.ll = ll; ctx.hidden = false;
@@ -113,7 +113,7 @@ $("#mbLocate").addEventListener("click", e => {
   toast("Buscando tu ubicación…");
   navigator.geolocation.getCurrentPosition(p => {
     const { latitude: lat, longitude: lon, accuracy } = p.coords;
-    if (!inVenezuela(lat, lon)) { toast("Tu ubicación está fuera de Venezuela"); return; }
+    if (!inArea(lat, lon)) { toast("Tu ubicación está fuera de Venezuela y Guyana"); return; }
     if (meDot) map.removeLayer(meDot);
     meDot = L.layerGroup([L.circle([lat, lon], { radius: accuracy, color: cssVar("--accent"), weight: 1, fillOpacity: 0.1, interactive: false }),
       L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2.5, fillColor: cssVar("--accent"), fillOpacity: 1 }).bindPopup(`<b>Estás aquí</b><br>Precisión ±${fmtDist(accuracy)}`)]).addTo(map);

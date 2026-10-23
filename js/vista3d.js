@@ -45,8 +45,8 @@ const ringAround = (p, r) => Array.from({ length: 73 }, (_, i) => { const a = i 
 function sync3D() {
   if (!gl || !gl.isStyleLoaded()) return;
   const set = (id, data) => gl.getSource(id) && gl.getSource(id).setData(data);
-  if (veShape) {
-    const polys = veShape.type === "Polygon" ? [veShape.coordinates] : veShape.coordinates;
+  if (areaShape) {
+    const polys = areaShape.type === "Polygon" ? [areaShape.coordinates] : areaShape.coordinates;
     set("pais", fc([{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]], ...polys.map(p => p[0])] } },
       { type: "Feature", properties: { borde: 1 }, geometry: { type: "MultiLineString", coordinates: polys.map(p => p[0]) } }]));
   }
@@ -80,17 +80,17 @@ function startOrbit() {
   $("#v3dOrbit").setAttribute("aria-pressed", "true"); orbitRaf = requestAnimationFrame(step);
 }
 function pointPopup(ll) {
-  const inside = inVenezuela(ll.lat, ll.lng), c = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
+  const inside = inArea(ll.lat, ll.lng), c = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
   if (glPopup) glPopup.remove();
   glPopup = new maplibregl.Popup({ offset: 8, maxWidth: "240px" }).setLngLat(ll)
-    .setHTML(`<b>${c}</b><br><span id="v3dAlt">Altitud…</span>${inside ? `<br><button class="btn" data-open3d="${ll.lat},${ll.lng}" style="margin-top:6px">Ver ficha de este punto</button>` : "<br>Fuera de Venezuela"}`).addTo(gl);
+    .setHTML(`<b>${c}</b><br><span id="v3dAlt">Altitud…</span>${inside ? `<br><button class="btn" data-open3d="${ll.lat},${ll.lng}" style="margin-top:6px">Ver ficha de este punto</button>` : "<br>Fuera de Venezuela y Guyana"}`).addTo(gl);
   elevAt(ll.lat, ll.lng).then(v => { const a = $("#v3dAlt"); if (a) a.textContent = `${fmtNum(Math.round(v))} m s. n. m.`; }).catch(() => {});
 }
 async function create3D(center, zoom) {
   await loadMapLibre();
   gl = new maplibregl.Map({
     container: "v3dMap", style: style3D(), center, zoom, pitch: 0, bearing: 0, maxPitch: 85, minZoom: 4.5,
-    maxBounds: [[VE_BBOX.w - 8, VE_BBOX.s - 6], [VE_BBOX.e + 8, VE_BBOX.n + 6]],
+    maxBounds: [[AREA_BBOX.w - 8, AREA_BBOX.s - 6], [AREA_BBOX.e + 8, AREA_BBOX.n + 6]],
     attributionControl: { compact: true }, fadeDuration: 150, cooperativeGestures: false,
   });
   gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true }), "top-right");
@@ -152,7 +152,7 @@ $("#v3dNorth").addEventListener("click", () => { if (gl) { stopOrbit(); gl.easeT
 $("#v3dCenter").addEventListener("click", () => {
   if (!gl) return; stopOrbit();
   if (S.point) gl.flyTo({ center: [S.point.lon, S.point.lat], zoom: Math.max(gl.getZoom(), 13.5), duration: 1200 });
-  else gl.fitBounds([[VE_BBOX.w, VE_BBOX.s], [VE_BBOX.e, VE_BBOX.n]], { pitch: 45, duration: 1200 });
+  else gl.fitBounds([[AREA_BBOX.w, AREA_BBOX.s], [AREA_BBOX.e, AREA_BBOX.n]], { pitch: 45, duration: 1200 });
 });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-open3d]"); if (!b) return;

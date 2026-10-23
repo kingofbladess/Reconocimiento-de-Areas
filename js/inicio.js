@@ -6,7 +6,7 @@ renderEmpty();
 layoutSheet();
 const fromHash = () => {
   const p = parseCoords(decodeURIComponent(location.hash.slice(1)));
-  if (p && inVenezuela(p.lat, p.lon) && !(S.point && dist(S.point, p) < 1)) selectPoint(p.lat, p.lon, { zoom: 15 });
+  if (p && inArea(p.lat, p.lon) && !(S.point && dist(S.point, p) < 1)) selectPoint(p.lat, p.lon, { zoom: 15 });
 };
 Promise.all([loadCountry(), loadMine()]).then(fromHash);
 addEventListener("hashchange", fromHash); // un enlace #lat,lon abierto con la app ya en pantalla

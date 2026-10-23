@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
 
-Versión 3.5 · octubre 2026
+Versión 3.6 · octubre 2026
 
 ## Cómo abrirla
 
@@ -55,7 +55,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Sin conexión:** la app abre sin internet. Cada ficha que abres queda guardada (dirección, clima, terreno, entorno, fotos, Wikipedia) y sin señal se muestra con la fecha de la copia. El botón **Sin conexión** descarga la zona que ves (imagen satelital, relieve topográfico o sombras, más el modelo de elevación para altitudes, perfiles, pendientes y 3D), muestra las zonas guardadas y el espacio usado, y permite borrarlas. El mapa de calles de OpenStreetMap no se descarga en bloque porque su política lo prohíbe.
 - **En el teléfono:** la ficha es una hoja que se arrastra entre tres alturas (solo título, media pantalla y casi completa); las herramientas son una columna de íconos; los lugares destacados aparecen al tocar el buscador; y las secciones de la ficha se pliegan tocando su título.
 
-El mapa resalta Venezuela y no acepta puntos fuera del país. El contorno viene de OpenStreetMap, que deja fuera la Guayana Esequiba.
+El mapa cubre **Venezuela y Guyana** (incluida la Guayana Esequiba): búsqueda, ficha, terreno, entorno, 3D, Analizar, Mis lugares y descarga sin conexión funcionan en ambos. No acepta puntos fuera de ellos. Los contornos vienen de OpenStreetMap (`datos/venezuela.json` y `datos/guyana.json`).
 
 ## Estructura
 
@@ -83,7 +83,7 @@ reconocimiento-venezuela/
 │   ├── reporte.js          Botón Analizar: reporte operativo del área
 │   ├── vista3d.js          Vista 3D del terreno (MapLibre GL)
 │   └── inicio.js           Arranque e instalación
-├── datos/venezuela.json    Contorno del país (OpenStreetMap simplificado), incluido para abrir rápido
+├── datos/                  Contornos de Venezuela y Guyana (OpenStreetMap simplificado), incluidos para abrir rápido
 ├── vendor/leaflet/         Leaflet 1.9.4 incluido (no depende de unpkg)
 ├── sw.js                   Modo sin conexión (guarda la app y los mapas ya vistos)
 ├── manifest.webmanifest    Datos para instalar la app

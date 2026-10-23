@@ -29,20 +29,20 @@ resultsEl.addEventListener("click", ev => {
   selectPoint(+d.lat, +d.lon, { bounds: bb ? [[bb[0], bb[2]], [bb[1], bb[3]]] : null, place: d });
 });
 async function searchByName(q, featured) {
-  resultsEl.hidden = false; resultsEl.innerHTML = '<div class="loading">Buscando en Venezuela…</div>';
-  const vb = `${VE_BBOX.w},${VE_BBOX.n},${VE_BBOX.e},${VE_BBOX.s}`;
+  resultsEl.hidden = false; resultsEl.innerHTML = '<div class="loading">Buscando en Venezuela y Guyana…</div>';
+  const vb = `${AREA_BBOX.w},${AREA_BBOX.n},${AREA_BBOX.e},${AREA_BBOX.s}`;
   const qn = norm(q), mine = featured ? [] : MY.places.filter(p => norm(`${p.name} ${p.desc} ${p.notes}`).includes(qn)).slice(0, 5);
   const mineHtml = mine.map(p => `<button data-mine="${esc(p.id)}"><b>★ ${esc(p.name)}</b><span>Mi lugar · ${esc(catOf(p).label)}</span></button>`).join("");
   try {
-    const data = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&accept-language=es&countrycodes=ve&viewbox=${vb}&bounded=1&q=${encodeURIComponent(q)}`);
+    const data = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&accept-language=es&countrycodes=${AREA_CC.join(",")}&viewbox=${vb}&bounded=1&q=${encodeURIComponent(q)}`);
     if (featured) {
       resultsEl.hidden = true;
       const near = data.find(d => dist({ lat: +d.lat, lon: +d.lon }, featured) < 30000);
       return selectPoint(featured.lat, featured.lon, { zoom: featured.z, place: near || null, title: q, force: true });
     }
     found = data;
-    if (!data.length && !mine.length) { resultsEl.innerHTML = offline() ? '<div class="note">Sin conexión: solo se pueden buscar coordenadas, tus lugares y búsquedas que ya hiciste antes.</div>' : '<div class="note">No encontré ese lugar en Venezuela. Prueba agregando el estado o la ciudad, por ejemplo “Plaza Bolívar, Mérida”.</div>'; return; }
-    resultsEl.innerHTML = mineHtml + data.map((d, i) => `<button data-i="${i}"><b>${esc(d.name || d.display_name.split(",")[0])}</b><span>${esc(d.display_name.replace(/, Venezuela$/, ""))}</span></button>`).join("");
+    if (!data.length && !mine.length) { resultsEl.innerHTML = offline() ? '<div class="note">Sin conexión: solo se pueden buscar coordenadas, tus lugares y búsquedas que ya hiciste antes.</div>' : '<div class="note">No encontré ese lugar en Venezuela ni en Guyana. Prueba agregando el estado o la ciudad, por ejemplo “Plaza Bolívar, Mérida”.</div>'; return; }
+    resultsEl.innerHTML = mineHtml + data.map((d, i) => `<button data-i="${i}"><b>${esc(d.name || d.display_name.split(",")[0])}</b><span>${esc(d.display_name.replace(/, (Venezuela|Guyana)$/, ""))}</span></button>`).join("");
   } catch (err) {
     if (featured) { resultsEl.hidden = true; return selectPoint(featured.lat, featured.lon, { zoom: featured.z, title: q, force: true }); }
     resultsEl.innerHTML = mineHtml + `<div class="err">${esc(err.message)}</div>`;
@@ -55,7 +55,7 @@ $("#q").addEventListener("focus", () => openFinder());
 // ---------- Selección de punto ----------
 let reqId = 0;
 async function selectPoint(lat, lon, opts = {}) {
-  if (!opts.force && !inVenezuela(lat, lon)) { toast("Ese punto está fuera de Venezuela. Elige una ubicación dentro del país."); return; }
+  if (!opts.force && !inArea(lat, lon)) { toast("Ese punto está fuera de Venezuela y Guyana. Elige una ubicación dentro de ellas."); return; }
   const id = ++reqId;
   const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
   NET.staleAt = null;
@@ -75,8 +75,8 @@ async function selectPoint(lat, lon, opts = {}) {
   loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadWiki(id); loadFeatures(id); loadGround(id); loadQuakes(id);
   if (!S.place) await reverse(id);
   if (id !== reqId) return;
-  if (!veShape && S.place && S.place.address && S.place.address.country_code && S.place.address.country_code !== "ve") {
-    toast("Ese punto está fuera de Venezuela."); return;
+  if (!areaShape && S.place && S.place.address && S.place.address.country_code && !AREA_CC.includes(S.place.address.country_code)) {
+    toast("Ese punto está fuera de Venezuela y Guyana."); return;
   }
   loadInfo(id);
 }

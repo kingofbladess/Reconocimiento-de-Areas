@@ -113,7 +113,7 @@ async function addDraftFiles(list) {
 async function savePlace(form) {
   const fd = new FormData(form), num = k => parseFloat(String(fd.get(k)).replace(",", "."));
   const lat = num("lat"), lon = num("lon");
-  if (!isFinite(lat) || !isFinite(lon) || !inVenezuela(lat, lon)) { toast("Las coordenadas deben estar dentro de Venezuela."); return; }
+  if (!isFinite(lat) || !isFinite(lon) || !inArea(lat, lon)) { toast("Las coordenadas deben estar dentro de Venezuela o Guyana."); return; }
   const now = Date.now(), old = draft.pl;
   const pl = { ...(old || { id: uid(), created: now }), name: String(fd.get("name")).trim() || "Sin nombre", cat: String(fd.get("cat")),
     desc: String(fd.get("desc")).trim(), notes: String(fd.get("notes")).trim(), lat, lon, updated: now };

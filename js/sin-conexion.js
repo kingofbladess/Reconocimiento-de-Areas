@@ -40,7 +40,7 @@ function zoneCount(zone) {
 function visibleBounds() {
   const pad = coverPad(), sz = map.getSize();
   const a = map.containerPointToLatLng([8, isMobile() ? 64 : 8]), b = map.containerPointToLatLng([sz.x - pad.x - 8, sz.y - pad.y - 8]);
-  return [Math.max(VE_BBOX.s, b.lat), Math.max(VE_BBOX.w, a.lng), Math.min(VE_BBOX.n, a.lat), Math.min(VE_BBOX.e, b.lng)].map(v => +v.toFixed(5));
+  return [Math.max(AREA_BBOX.s, b.lat), Math.max(AREA_BBOX.w, a.lng), Math.min(AREA_BBOX.n, a.lat), Math.min(AREA_BBOX.e, b.lng)].map(v => +v.toFixed(5));
 }
 const ZOOM_TXT = { 11: "pueblos", 12: "pueblos y vías", 13: "barrios y trochas", 14: "calles", 15: "calles y casas", 16: "edificaciones", 17: "detalle alto", 18: "detalle máximo" };
 const fmtMB = b => b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${Math.max(0.1, b / 1e6).toFixed(1)} MB`;

@@ -7,7 +7,7 @@
 const map = L.map("map", { zoomControl: false, worldCopyJump: false, minZoom: 5, maxBoundsViscosity: 0.8, preferCanvas: true,
   zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 110, wheelDebounceTime: 25, bounceAtZoomLimits: false,
   inertiaDeceleration: 2200, easeLinearity: 0.2, doubleClickZoom: true,
-  maxBounds: [[VE_BBOX.s - 3, VE_BBOX.w - 4], [VE_BBOX.n + 4, VE_BBOX.e + 4]] });
+  maxBounds: [[AREA_BBOX.s - 3, AREA_BBOX.w - 4], [AREA_BBOX.n + 4, AREA_BBOX.e + 4]] });
 L.control.zoom({ position: "topright", zoomInTitle: "Acercar (+)", zoomOutTitle: "Alejar (−)" }).addTo(map);
 // Botones bajo el zoom: vista 3D, mi ubicación y norte/país
 const MapButtons = L.Control.extend({
@@ -22,8 +22,8 @@ const MapButtons = L.Control.extend({
 });
 new MapButtons().addTo(map);
 L.control.scale({ imperial: false, position: "bottomright" }).addTo(map);
-const veBounds = L.latLngBounds([VE_BBOX.s, VE_BBOX.w], [VE_BBOX.n, VE_BBOX.e]);
-map.fitBounds(veBounds);
+const areaBounds = L.latLngBounds([AREA_BBOX.s, AREA_BBOX.w], [AREA_BBOX.n, AREA_BBOX.e]);
+map.fitBounds(areaBounds);
 // crossOrigin: las teselas llegan como respuestas CORS normales; así el modo sin conexión las guarda con su tamaño real
 // (las respuestas "opacas" ocupan unos 7 MB cada una en la cuota del navegador y la llenaban enseguida)
 const TILE_OPTS = { crossOrigin: "anonymous", keepBuffer: 3 };
@@ -62,20 +62,20 @@ map.on("mousemove", e => {
 });
 map.on("mouseout", () => { $("#readout").hidden = true; });
 
-// Contorno del país y máscara oscura fuera de Venezuela.
-// Viene incluido en la app (datos/venezuela.json, OpenStreetMap simplificado): carga al instante y funciona sin conexión.
+// Contorno de Venezuela y Guyana, con máscara oscura fuera de ellos.
+// Viene incluido en la app (datos/*.json, OpenStreetMap simplificado): carga al instante y funciona sin conexión.
 // Antes se pedía a Nominatim en cada arranque, lo que retrasaba varios segundos la apertura de un enlace #lat,lon.
+async function countryShape(file, name) {
+  try { const r = await fetch(`datos/${file}.json`); if (r.ok) return await r.json(); } catch (_) { /* abierta con doble clic: file:// no permite fetch */ }
+  try { const d = await getJSON(`https://nominatim.openstreetmap.org/search?country=${name}&format=jsonv2&polygon_geojson=1&polygon_threshold=0.003&limit=1`); return d[0] && d[0].geojson; }
+  catch (_) { return null; /* sin contorno: se valida con el recuadro y la geocodificación inversa */ }
+}
+const polysOf = g => g.type === "Polygon" ? [g.coordinates] : g.coordinates;
 async function loadCountry() {
-  let g = null;
-  try { const r = await fetch("datos/venezuela.json"); if (r.ok) g = await r.json(); } catch (_) { /* abierta con doble clic: file:// no permite fetch */ }
-  if (!g) {
-    try { const d = await getJSON("https://nominatim.openstreetmap.org/search?country=Venezuela&format=jsonv2&polygon_geojson=1&polygon_threshold=0.003&limit=1"); g = d[0] && d[0].geojson; }
-    catch (_) { /* sin contorno: se valida con el recuadro y la geocodificación inversa */ }
-  }
-  if (!g) return;
-  veShape = g;
-  const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
-  const holes = polys.map(p => p[0].map(([x, y]) => [y, x]));
+  const shapes = (await Promise.all([countryShape("venezuela", "Venezuela"), countryShape("guyana", "Guyana")])).filter(Boolean);
+  if (!shapes.length) return;
+  areaShape = { type: "MultiPolygon", coordinates: shapes.flatMap(polysOf) };
+  const holes = areaShape.coordinates.map(p => p[0].map(([x, y]) => [y, x]));
   maskLayer = L.polygon([[[-90, -360], [-90, 360], [90, 360], [90, -360]], ...holes],
     { stroke: false, fillColor: "#000", fillOpacity: 0.38, interactive: false }).addTo(map);
   L.polyline(holes, { color: cssVar("--gold"), weight: 2, opacity: 0.9, interactive: false }).addTo(map);
@@ -87,4 +87,4 @@ function inPolygon(lat, lon, g) {
   const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
   return polys.some(p => ringHas(p[0]) && !p.slice(1).some(ringHas));
 }
-function inVenezuela(lat, lon) { if (!inBBox(lat, lon)) return false; return veShape ? inPolygon(lat, lon, veShape) : true; }
+function inArea(lat, lon) { if (!inBBox(lat, lon)) return false; return areaShape ? inPolygon(lat, lon, areaShape) : true; }
