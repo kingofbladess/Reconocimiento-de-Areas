@@ -84,7 +84,7 @@ async function loadFeatures(id) {
     try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
-  S.busy.feats = false;
+  S.busy.feats = false; esTags(data);
   if (!data) { S.errs.feats = (lastErr && lastErr.message) || "No se pudieron cargar los alrededores"; renderFeats(); return; }
   const seen = new Map();
   for (const el of data.elements || []) {
@@ -93,7 +93,7 @@ async function loadFeatures(id) {
     if (el.type === "node") best = { lat: el.lat, lon: el.lon, d: dist(S.point, el) };
     else for (const line of lines) { const n = line.length ? nearestOn(S.point, line) : null; if (n && (!best || n.d < best.d)) best = n; }
     if (!best || best.d > r * 1.05) continue;
-    const name = t.name || t["name:es"] || t.ref || "";
+    const name = t.name || t.ref || ""; // esTags ya dejó el nombre en español
     const f = { id: el.type + el.id, cat, name, type: typeLabel(t, cat), tags: t, lat: best.lat, lon: best.lon, d: best.d, lines, parts: 1,
       closed: lines.length > 0 && lines.every(l => l.length > 3 && l[0].lat === l[l.length - 1].lat && l[0].lon === l[l.length - 1].lon) };
     const key = name ? `${cat}|${f.type}|${name}` : f.id, prev = seen.get(key);

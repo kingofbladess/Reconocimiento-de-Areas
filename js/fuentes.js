@@ -16,9 +16,11 @@ async function loadInfo(id) {
     const pais = S.place && S.place.address && S.place.address.country_code === "gy" ? "Guyana" : "Venezuela";
     if (ad.localidad) queries.push(`${ad.localidad} ${ad.estado} ${pais}`);
     if (ad.municipio) queries.push(`${ad.municipio} ${ad.estado} ${pais}`);
-    for (const q of queries) {
-      try { info = await fromWikiSearch(q); } catch (e) { lastErr = e; break; }
-      if (info || id !== reqId) break;
+    // en Guyana casi no hay artículos en español: si no aparece nada, se busca en la Wikipedia en inglés y se traduce
+    const langs = pais === "Guyana" ? ["es", "en"] : ["es"];
+    search: for (const lang of langs) for (const q of queries) {
+      try { info = await fromWikiSearch(q, lang); } catch (e) { lastErr = e; break search; }
+      if (info || id !== reqId) break search;
     }
   }
   if (id !== reqId) return;
@@ -41,28 +43,30 @@ async function fromWikidata(qid) {
   const web = pick("P856");
   const img = pick("P18");
   let summary = null;
-  const title = e.sitelinks && e.sitelinks.eswiki && e.sitelinks.eswiki.title;
-  if (title) summary = await wikiSummary(title).catch(() => null);
+  const sl = e.sitelinks || {}, lang = sl.eswiki ? "es" : sl.enwiki ? "en" : null, title = lang && sl[lang + "wiki"].title;
+  if (title) summary = await wikiSummary(title, lang).catch(() => null);
   return {
-    title: (e.labels.es || e.labels.en || {}).value || (summary && summary.title),
-    description: (e.descriptions.es || e.descriptions.en || {}).value || "",
+    title: esName((e.labels.es || e.labels.en || {}).value) || (summary && summary.title),
+    description: e.descriptions.es ? e.descriptions.es.value : await toEs((e.descriptions.en || {}).value || ""),
     extract: summary ? summary.extract : "",
     url: summary ? summary.url : `https://www.wikidata.org/wiki/${qid}`,
     image: img ? commonsFile(img, 900) : summary && summary.image,
     imageTitle: img ? "File:" + img : null,
-    facts, web, source: title ? "Wikipedia y Wikidata" : "Wikidata",
+    facts, web, source: title ? (lang === "en" ? "Wikipedia en inglés (traducida) y Wikidata" : "Wikipedia y Wikidata") : "Wikidata",
   };
 }
-async function fromWikiSearch(q) {
-  const d = await getJSON(`${WIKI}action=query&list=search&srlimit=1&srsearch=${encodeURIComponent(q)}`);
+async function fromWikiSearch(q, lang = "es") {
+  const d = await getJSON(`https://${lang}.wikipedia.org/w/api.php?format=json&origin=*&action=query&list=search&srlimit=1&srsearch=${encodeURIComponent(q)}`);
   const hit = d.query && d.query.search && d.query.search[0]; if (!hit) return null;
-  const s = await wikiSummary(hit.title);
+  const s = await wikiSummary(hit.title, lang);
   if (!s || !s.extract) return null;
-  return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, facts: [], source: "Wikipedia (zona)" };
+  return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, facts: [], source: lang === "en" ? "Wikipedia en inglés, traducida (zona)" : "Wikipedia (zona)" };
 }
-async function wikiSummary(title) {
-  const s = await getJSON(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
-  return { title: s.title, description: s.description || "", extract: s.extract || "", url: s.content_urls && s.content_urls.desktop.page, image: s.originalimage ? (s.thumbnail || s.originalimage).source.replace(/\/\d+px-/, "/900px-") : null };
+// Resumen de un artículo; el de la Wikipedia en inglés se entrega traducido
+async function wikiSummary(title, lang = "es") {
+  const s = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
+  const [description, extract] = lang === "en" ? await Promise.all([toEs(s.description || ""), toEs(s.extract || "")]) : [s.description || "", s.extract || ""];
+  return { title: lang === "en" ? esName(s.title) : s.title, description, extract, url: s.content_urls && s.content_urls.desktop.page, image: s.originalimage ? (s.thumbnail || s.originalimage).source.replace(/\/\d+px-/, "/900px-") : null };
 }
 const commonsFile = (name, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name.replace(/^File:/, ""))}?width=${w}`;
 
@@ -71,7 +75,7 @@ async function loadPhotos(id) {
   S.busy.photos = true; renderPhotos();
   const r = Math.min(10000, Math.max(2000, S.radius * 2));
   try {
-    const d = await getJSON(`${COMMONS}action=query&generator=geosearch&ggsnamespace=6&ggscoord=${S.point.lat}|${S.point.lon}&ggsradius=${r}&ggslimit=50&prop=imageinfo|coordinates&iiprop=url|extmetadata|mime&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName|ImageDescription|DateTimeOriginal|ObjectName&colimit=50`);
+    const d = await getJSON(`${COMMONS}action=query&generator=geosearch&ggsnamespace=6&ggscoord=${S.point.lat}|${S.point.lon}&ggsradius=${r}&ggslimit=50&prop=imageinfo|coordinates&iiprop=url|extmetadata|mime&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName|ImageDescription|DateTimeOriginal|ObjectName&iiextmetadatalanguage=es&colimit=50`);
     if (id !== reqId) return;
     const pages = Object.values((d.query && d.query.pages) || {});
     S.photos = pages.filter(p => p.imageinfo && /^image\/(jpeg|png|webp)/.test(p.imageinfo[0].mime)).map(p => {
@@ -88,6 +92,15 @@ async function loadPhotos(id) {
     }).sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9));
   } catch (e) { if (id === reqId) S.errs.photos = e.message; }
   if (id === reqId) { S.busy.photos = false; renderPhotos(); renderHead(); renderNav(); }
+  if (id === reqId && S.photos.length) translatePhotos(id);
+}
+// Títulos y descripciones de Commons suelen estar en inglés: se traducen en segundo plano y se vuelve a dibujar
+async function translatePhotos(id) {
+  const ph = S.photos, top = ph.slice(0, 24);
+  const [names, descs] = await Promise.all([toEsMany(ph.map(p => p.name), true), toEsMany(top.map(p => p.desc), true)]);
+  if (id !== reqId || ph !== S.photos) return;
+  ph.forEach((p, i) => { p.name = names[i]; if (i < top.length) p.desc = descs[i]; });
+  renderPhotos();
 }
 
 // ---------- Wikipedia cercano ----------

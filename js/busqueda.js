@@ -34,7 +34,7 @@ async function searchByName(q, featured) {
   const qn = norm(q), mine = featured ? [] : MY.places.filter(p => norm(`${p.name} ${p.desc} ${p.notes}`).includes(qn)).slice(0, 5);
   const mineHtml = mine.map(p => `<button data-mine="${esc(p.id)}"><b>★ ${esc(p.name)}</b><span>Mi lugar · ${esc(catOf(p).label)}</span></button>`).join("");
   try {
-    const data = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&accept-language=es&countrycodes=${AREA_CC.join(",")}&viewbox=${vb}&bounded=1&q=${encodeURIComponent(q)}`);
+    const data = (await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&accept-language=es&countrycodes=${AREA_CC.join(",")}&viewbox=${vb}&bounded=1&q=${encodeURIComponent(q)}`)).map(esPlace);
     if (featured) {
       resultsEl.hidden = true;
       const near = data.find(d => dist({ lat: +d.lat, lon: +d.lon }, featured) < 30000);
@@ -95,7 +95,7 @@ async function reverse(id) {
   try {
     const d = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&extratags=1&accept-language=es&lat=${S.point.lat}&lon=${S.point.lon}`);
     if (id !== reqId) return;
-    S.place = d.error ? { display_name: "Zona sin dirección registrada (agua o área remota)" } : d;
+    S.place = d.error ? { display_name: "Zona sin dirección registrada (agua o área remota)" } : esPlace(d);
   } catch (_) { if (id === reqId) S.place = { display_name: "No se pudo obtener la dirección" }; }
   if (id === reqId) {
     renderHead(); renderCoords();

@@ -68,6 +68,7 @@ reconocimiento-venezuela/
 │   ├── mapa.js             Mapa base, capas y contorno de Venezuela
 │   ├── geo.js              Formatos de coordenadas y geometría
 │   ├── red.js              Peticiones con reintento, mensajes de error y copia guardada para usar sin conexión
+│   ├── espanol.js          Nombres en español (Guyana) y traducción de textos de Wikipedia y Commons
 │   ├── relieve.js          Modelo de elevación en teselas, altitud al instante y capa de pendientes
 │   ├── busqueda.js         Búsqueda y selección de un punto
 │   ├── fuentes.js          Wikipedia, Commons, clima, aire y sismos

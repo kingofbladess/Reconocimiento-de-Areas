@@ -71,7 +71,7 @@ async function loadGround(id) {
     try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
-  S.busy.ground = false;
+  S.busy.ground = false; esTags(data);
   if (!data) { S.errs.ground = (lastErr && lastErr.message) || "No se pudo consultar OpenStreetMap"; renderTerrain(); return; }
   const areas = [], roads = [];
   for (const el of data.elements || []) {
