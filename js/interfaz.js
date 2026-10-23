@@ -1,7 +1,7 @@
 // Interfaz adaptable: ficha deslizable en el teléfono, buscador compacto, menú de capas, secciones plegables y aviso sin conexión
 "use strict";
 
-// ---------- Ficha deslizable (teléfono) ----------
+// ---------- Ficha deslizable (teléfono) y minimizable (escritorio) ----------
 // Tres alturas: "peek" (solo el título, el mapa queda libre), "half" (media pantalla) y "full" (casi toda).
 // Se cambia tocando o arrastrando la barra superior; en "half" basta deslizar el contenido hacia arriba para ampliarla.
 const sheetEl = $("#sheet"), MQ_MOBILE = matchMedia("(max-width: 860px)");
@@ -21,6 +21,7 @@ function layoutSheet() {
   sheetEl.style.height = isMobile() ? h + "px" : "";
   // los controles de Leaflet (escala, créditos) y la caja de medición se apoyan sobre la ficha
   document.documentElement.style.setProperty("--sheet-h", h + "px");
+  document.documentElement.classList.toggle("sheet-peek", snap === "peek");
 }
 MQ_MOBILE.addEventListener("change", layoutSheet);
 addEventListener("resize", () => { clearTimeout(layoutSheet.t); layoutSheet.t = setTimeout(layoutSheet, 120); });
@@ -48,7 +49,8 @@ addEventListener("resize", () => { clearTimeout(layoutSheet.t); layoutSheet.t = 
   };
   grab.addEventListener("pointerup", end); grab.addEventListener("pointercancel", end);
   // Desde el teclado o un lector de pantalla
-  grab.addEventListener("click", e => { if (e.detail === 0) setSheet(snap === "peek" ? "half" : "peek"); });
+  // En escritorio la barra minimiza o abre el panel con un clic; en el teléfono, desde el teclado o un lector de pantalla
+  grab.addEventListener("click", e => { if (!isMobile() || e.detail === 0) setSheet(snap === "peek" ? "half" : "peek"); });
   // Deslizar el contenido: hacia arriba en "half" amplía; hacia abajo con el contenido al inicio la baja un paso
   let sy = null, top0 = 0;
   sheetBody.addEventListener("touchstart", e => { sy = e.touches[0].clientY; top0 = sheetBody.scrollTop; }, { passive: true });
@@ -65,7 +67,7 @@ addEventListener("resize", () => { clearTimeout(layoutSheet.t); layoutSheet.t = 
 // ---------- Mapa: centrar en la parte que no tapa la ficha ----------
 function coverPad() {
   if (isMobile()) return { x: 0, y: snapPx(snap) };
-  return { x: sheetEl.offsetWidth ? sheetEl.offsetWidth + 24 : 0, y: 0 };
+  return { x: snap !== "peek" && sheetEl.offsetWidth ? sheetEl.offsetWidth + 24 : 0, y: 0 };
 }
 // Centra el punto en el área visible. Sin cambio de zoom solo mueve el mapa si el punto quedó tapado o en el borde.
 function focusVisible(ll, z, fly) {

@@ -257,7 +257,44 @@ dl { margin: 0; }
  .terr { grid-template-columns: 1fr; } .terr svg { max-width: 220px; } }
 
 .leaflet-container { font-family: var(--f-body); }
-@media (min-width: 861px) { .leaflet-right { right: 464px; } }
+/* ---- Escritorio: controles compactos y panel minimizable ---- */
+@media (min-width: 861px) {
+  .finder { width: min(360px, calc(100vw - 24px)); }
+  .finder-card { padding: 9px; border-radius: 12px; }
+  .brand { gap: 8px; margin: 0 2px 8px; }
+  .brand .mark { width: 28px; height: 28px; border-radius: 8px; }
+  .brand h1 { font-size: 14px; }
+  .brand small { font-size: 11px; }
+  .search input { padding: 7px 10px; font-size: 14px; border-radius: 8px; }
+  .search .btn { padding: 6px 10px; font-size: 13px; }
+  .featured { margin-top: 7px; scrollbar-width: none; }
+  .featured::-webkit-scrollbar { display: none; }
+  .featured button { padding: 3px 9px; font-size: 12px; }
+  .tool { height: 32px; padding: 0 9px; font-size: 13px; border-radius: 8px; gap: 5px; }
+  .tool svg { width: 15px; height: 15px; }
+  .seg { border-radius: 8px; padding: 2px; }
+  .seg button { height: 28px; padding: 0 8px; font-size: 13px; border-radius: 6px; }
+  .tools { bottom: 30px; gap: 5px; }
+  .leaflet-touch .leaflet-control-zoom a, .map-btns a { width: 32px; height: 32px; line-height: 32px; font-size: 17px; }
+  .sheet { width: 400px; }
+  .hero { aspect-ratio: 16 / 8; }
+  .actions .btn { font-size: 12.5px; padding: 6px 10px; }
+  .leaflet-right { right: 424px; }
+  /* Barra superior del panel: un clic lo minimiza; minimizado queda como una etiqueta arriba a la derecha */
+  .grab { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--sheet); color: var(--muted); font: 600 12px var(--f-body); cursor: pointer; flex: none; text-align: left; }
+  .grab:hover { color: var(--ink); background: var(--soft); }
+  .grab .peek { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grab .peek:empty::before { content: "Minimizar panel"; }
+  .grab::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-135deg) translate(-2px, -2px); flex: none; }
+  .sheet[data-snap="peek"] { bottom: auto; width: auto; max-width: 340px; border-radius: 10px; }
+  .sheet[data-snap="peek"] .grab { border-bottom: 0; padding: 8px 12px; color: var(--ink); font-size: 13px; }
+  .sheet[data-snap="peek"] .grab::after { transform: rotate(45deg) translate(-2px, -2px); }
+  .sheet[data-snap="peek"] .sheet-scroll { display: none; }
+  .sheet-peek .leaflet-right { right: 0; }
+  .sheet-peek .leaflet-top.leaflet-right { top: 46px; }
+}
+.hero.small { aspect-ratio: auto; height: 110px; }
+.hero.small h2 { font-size: 20px; }
 .leaflet-popup-content { font-size: 13px; }
 .leaflet-popup-content b { font-size: 14px; }
 .leaflet-control-zoom { border: 0 !important; box-shadow: var(--shadow) !important; }
@@ -318,7 +355,6 @@ body.in3d .finder, body.in3d .sheet, body.in3d .tools, body.in3d .readout, body.
 .pin { width: 24px; height: 24px; border-radius: 50% 50% 50% 0; background: var(--gold); transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
 .wpin { width: 22px; height: 22px; border-radius: 50%; background: #fff; color: #222; font: 700 12px/22px Georgia, serif; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.5); border: 2px solid var(--accent); }
 
-.grab { display: none; }
 /* Herramientas: en escritorio, fila con texto; el botón Capas solo existe en el teléfono */
 #btnLayers { display: none; }
 .tool .cnt { font: 600 11px var(--f-mono); }
