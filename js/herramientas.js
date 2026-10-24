@@ -106,8 +106,8 @@ document.addEventListener("pointerdown", e => { if (ctxOpen() && !ctx.contains(e
 map.on("movestart", closeCtx);
 
 // ---------- Mi ubicación ----------
-// El botón de ubicación del mapa hace el Reconocimiento del Área (js/reconocimiento.js)
-$("#mbLocate").addEventListener("click", e => { e.preventDefault(); startRecon(); });
+// El botón de ubicación del mapa sigue tu posición GPS en tiempo real (js/reconocimiento.js)
+$("#mbLocate").addEventListener("click", e => { e.preventDefault(); toggleFollow(); });
 $("#mb3d").addEventListener("click", e => { e.preventDefault(); open3D(); });
 
 // ---------- Atajos de teclado ----------

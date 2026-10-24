@@ -15,7 +15,7 @@ const MapButtons = L.Control.extend({
   onAdd() {
     const d = L.DomUtil.create("div", "leaflet-bar map-btns");
     d.innerHTML = `<a href="#" role="button" id="mb3d" title="Vista 3D del terreno (tecla 3)" class="mb-3d">3D</a>
-      <a href="#" role="button" id="mbLocate" title="Mi ubicación: reconocimiento del área"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></a>`;
+      <a href="#" role="button" id="mbLocate" title="Seguir mi posición GPS en tiempo real"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></a>`;
     L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
     return d;
   },

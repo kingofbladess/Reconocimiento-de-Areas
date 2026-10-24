@@ -383,6 +383,22 @@ section.recon { background: color-mix(in srgb, var(--accent) 6%, var(--sheet)); 
 .ralert li { font-size: 13px; color: var(--warn); padding-left: 16px; position: relative; }
 .ralert li::before { content: "⚠"; position: absolute; left: 0; }
 
+/* GPS en tiempo real */
+.me { position: relative; width: 22px; height: 22px; }
+.me b { position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.5); }
+.me::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: var(--accent); opacity: .35; animation: mepulse 2s ease-out infinite; }
+@keyframes mepulse { from { transform: scale(.5); opacity: .5; } to { transform: scale(1.6); opacity: 0; } }
+.me-dir { display: none; position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -22px 0 0 -7px; border: 7px solid transparent; border-bottom: 12px solid var(--accent); transform-origin: 7px 22px; transform: rotate(var(--hdg, 0deg)); }
+.me.moving .me-dir { display: block; }
+.map-btns a.on { background: var(--accent); color: var(--accent-ink); }
+.gps { position: fixed; z-index: 1050; left: 50%; transform: translateX(-50%); bottom: 34px; display: flex; align-items: center; gap: 8px; background: var(--sheet); border-radius: 999px; padding: 4px 6px 4px 12px; box-shadow: var(--shadow); font: 500 12px var(--f-mono); white-space: nowrap; max-width: calc(100vw - 24px); }
+.gps-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--go); animation: blink 1.6s infinite; flex: none; }
+@keyframes blink { 50% { opacity: .3; } }
+.gps button { border: 1px solid var(--line); background: var(--sheet); border-radius: 999px; padding: 3px 9px; font: 600 12px var(--f-body); cursor: pointer; }
+.gps button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+@media (min-width: 861px) { .gps { bottom: 76px; left: calc(50% - 212px); } .sheet-peek .gps { left: 50%; } }
+@media (max-width: 860px) { .gps { bottom: calc(var(--sheet-h, 58px) + 10px); } .is-offline .gps { bottom: calc(var(--sheet-h, 58px) + 44px); } }
+
 /* Panel sin conexión */
 .zrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .zrow b { display: block; font-weight: 600; font-size: 14px; }

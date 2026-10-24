@@ -1,39 +1,84 @@
 // Reconocimiento del Área: ubica al usuario por GPS, abre el área a su alrededor y resume todo lo que hay cerca
 "use strict";
 
-// ---------- Posición GPS ----------
-// Punto azul con su círculo de precisión; mientras el reconocimiento está activo se sigue al usuario
-// y se avisa si se alejó del punto analizado.
-let meDot = null, meWatch = null, mePos = null;
-function drawMe(lat, lon, acc) {
-  mePos = { lat, lon, acc };
-  if (meDot) { meDot.getLayers()[0].setLatLng([lat, lon]).setRadius(acc); meDot.getLayers()[1].setLatLng([lat, lon]); return; }
-  meDot = L.layerGroup([L.circle([lat, lon], { radius: acc, color: cssVar("--accent"), weight: 1, fillOpacity: 0.1, interactive: false }),
-    L.circleMarker([lat, lon], { radius: 8, color: "#fff", weight: 3, fillColor: cssVar("--accent"), fillOpacity: 1 }).bindPopup("<b>Estás aquí</b>")]).addTo(map);
+// ---------- Posición GPS en tiempo real ----------
+// El GPS queda activo desde que te ubicas: el punto azul (con flecha de rumbo si te mueves) se actualiza
+// en cada lectura y, en modo "seguir", el mapa te mantiene centrado. Si mueves el mapa con el dedo se deja
+// de seguir hasta que toques de nuevo el botón de ubicación.
+let meMark = null, meCirc = null, meWatch = null, mePos = null, following = false, wakeLock = null;
+const meIcon = L.divIcon({ className: "", html: '<div class="me"><i class="me-dir"></i><b></b></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+function drawMe(c) {
+  const { latitude: lat, longitude: lon, accuracy: acc, heading, speed } = c;
+  mePos = { lat, lon, acc, speed, heading, t: Date.now() };
+  if (!meMark) {
+    meCirc = L.circle([lat, lon], { radius: acc, color: cssVar("--accent"), weight: 1, fillOpacity: 0.1, interactive: false }).addTo(map);
+    meMark = L.marker([lat, lon], { icon: meIcon, zIndexOffset: 2000, keyboard: false }).bindPopup("<b>Estás aquí</b>").addTo(map);
+  } else { meCirc.setLatLng([lat, lon]).setRadius(acc); meMark.setLatLng([lat, lon]); }
+  const el = meMark.getElement() && meMark.getElement().firstChild;
+  if (el) { const moving = heading != null && !isNaN(heading) && speed > 0.5; el.classList.toggle("moving", moving); if (moving) el.style.setProperty("--hdg", heading + "deg"); }
+  if (following) map.panTo(visibleCenter([lat, lon], map.getZoom()), { animate: true, duration: 0.5 });
+  updateGpsChip();
 }
-function watchMe() {
-  if (meWatch != null) return;
+// Centro del mapa que deja tu posición en medio de la parte que no tapa la ficha
+function visibleCenter(ll, z) { const pad = coverPad(); return map.unproject(map.project(L.latLng(ll), z).add([pad.x / 2, pad.y / 2]), z); }
+function updateGpsChip() {
+  const ch = $("#gps"); if (!ch) return;
+  ch.hidden = meWatch == null;
+  if (!mePos) { $("#gpsTxt").textContent = "Buscando señal GPS…"; return; }
+  const v = mePos.speed != null && !isNaN(mePos.speed) ? ` · ${(mePos.speed * 3.6).toFixed(mePos.speed < 2.8 ? 1 : 0)} km/h` : "";
+  const h = mePos.heading != null && !isNaN(mePos.heading) && mePos.speed > 0.5 ? ` · rumbo ${Math.round(mePos.heading)}° ${rumbo(mePos.heading)}` : "";
+  $("#gpsTxt").textContent = `GPS ±${fmtDist(mePos.acc)}${v}${h}`;
+  $("#gpsFollow").setAttribute("aria-pressed", following);
+  $("#mbLocate").classList.toggle("on", following);
+}
+async function keepAwake(on) { // la pantalla no se apaga mientras se sigue la posición
+  try { if (on && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (_) {}
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && following) keepAwake(true); });
+function setFollow(on) {
+  following = on; keepAwake(on);
+  if (on && mePos) { const z = Math.max(map.getZoom(), 16); map.setView(visibleCenter([mePos.lat, mePos.lon], z), z); }
+  updateGpsChip();
+}
+map.on("dragstart", () => { if (following) { setFollow(false); toast("Dejaste de seguir tu posición. Toca ◎ para volver a seguirla."); } });
+function watchMe(onFirst) {
+  if (meWatch != null) { if (onFirst && mePos) onFirst(mePos); return; }
+  let first = true;
   meWatch = navigator.geolocation.watchPosition(p => {
-    if (!S.recon) { navigator.geolocation.clearWatch(meWatch); meWatch = null; return; }
-    drawMe(p.coords.latitude, p.coords.longitude, p.coords.accuracy);
-    scheduleRecon();
-  }, () => {}, { enableHighAccuracy: true, maximumAge: 10000 });
+    drawMe(p.coords); scheduleRecon();
+    if (first) { first = false; if (onFirst) onFirst(mePos); }
+  }, err => { if (first) { stopGps(); toast(GEO_ERR[err.code] || "No se pudo obtener tu ubicación"); $("#btnRecon").classList.remove("busy"); } },
+  { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+  updateGpsChip();
 }
+function stopGps() {
+  if (meWatch != null) navigator.geolocation.clearWatch(meWatch);
+  meWatch = null; setFollow(false);
+  if (meMark) { map.removeLayer(meMark); map.removeLayer(meCirc); meMark = meCirc = null; }
+  mePos = null; updateGpsChip();
+}
+// Botón de ubicación del mapa: activa el GPS y sigue tu posición; otro toque deja de seguir
+function toggleFollow() {
+  if (!navigator.geolocation) { toast("Este navegador no permite conocer tu ubicación"); return; }
+  if (following) return setFollow(false);
+  following = true;
+  watchMe(() => setFollow(true));
+  if (!mePos) toast("Buscando tu posición GPS…"); else setFollow(true);
+}
+$("#gpsFollow").addEventListener("click", () => setFollow(!following));
+$("#gpsStop").addEventListener("click", stopGps);
 const GEO_ERR = { 1: "Permiso de ubicación denegado. Actívalo en el navegador para usar el reconocimiento.", 2: "El GPS no logra fijar la posición. Sal a cielo abierto y reintenta.", 3: "El GPS tardó demasiado. Reintenta en unos segundos." };
 function startRecon() {
   if (!navigator.geolocation) { toast("Este navegador no permite conocer tu ubicación"); return; }
   if (!/^https:|^http:\/\/localhost/.test(location.href)) toast("El GPS necesita la app abierta por https o con el lanzador");
   const btn = $("#btnRecon"); btn.classList.add("busy");
-  toast("Buscando tu posición GPS…");
-  navigator.geolocation.getCurrentPosition(p => {
+  if (!mePos) toast("Buscando tu posición GPS…");
+  watchMe(({ lat, lon }) => {
     btn.classList.remove("busy");
-    const { latitude: lat, longitude: lon, accuracy } = p.coords;
-    drawMe(lat, lon, accuracy);
     if (!inArea(lat, lon)) { map.flyTo([lat, lon], 12); toast("Tu ubicación está fuera de Venezuela y Guyana: no se puede reconocer el área"); return; }
     selectPoint(lat, lon, { zoom: 15, recon: true, force: true });
-    watchMe();
-  }, err => { btn.classList.remove("busy"); toast(GEO_ERR[err.code] || "No se pudo obtener tu ubicación"); },
-  { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 });
+    following = true; updateGpsChip(); keepAwake(true);
+  });
 }
 $("#btnRecon").addEventListener("click", startRecon);
 
