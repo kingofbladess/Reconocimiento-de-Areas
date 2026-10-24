@@ -6,8 +6,8 @@ function viewItems(g) {
   if (g === "m") return myFiles(S.custom).map(f => ({ pdf: f.type === "application/pdf", src: fileURL(f), thumb: f.thumb ? fileURL(f, true) : f.type.startsWith("image/") ? fileURL(f) : null,
     title: f.name, open: fileURL(f), meta: `<b>${esc(f.name)}</b><br>${fmtSize(f.size)} · agregado el ${fmtDate(f.created)} · archivo propio` }));
   return S.photos.map(p => ({ src: commonsFile(p.title, 1600), thumb: p.thumb, title: p.name, open: p.page,
-    cap: `${p.d != null ? `<b>${fmtDist(p.d)}</b>` : ""}${esc(p.name)}`,
-    meta: `<b>${esc(p.name)}</b>${p.desc && p.desc !== p.name ? `<br>${esc(p.desc)}` : ""}<br>${esc(p.author)}${p.license ? ` · ${esc(p.license)}` : ""}${p.date ? ` · ${esc(p.date)}` : ""}${p.d != null ? ` · a ${fmtDist(p.d)} del punto` : ""} · <a href="${esc(p.page)}" target="_blank" rel="noopener">Ver en Commons</a>` }));
+    cap: `${p.year ? `<i class="yr${p.year >= THIS_YEAR ? " new" : ""}">${p.year}</i>` : ""}${p.d != null ? `<b>${fmtDist(p.d)}</b>` : ""}${esc(p.name)}`,
+    meta: `<b>${esc(p.name)}</b>${p.desc && p.desc !== p.name ? `<br>${esc(p.desc)}` : ""}<br>${esc(p.author)}${p.license ? ` · ${esc(p.license)}` : ""}${p.date ? ` · tomada el ${esc(p.date)}` : p.up ? ` · subida el ${esc(p.up)}` : ""}${p.d != null ? ` · a ${fmtDist(p.d)} del punto` : ""} · <a href="${esc(p.page)}" target="_blank" rel="noopener">Ver en Commons</a>` }));
 }
 const lb = { items: [], i: 0 };
 function openViewer(g, i) {

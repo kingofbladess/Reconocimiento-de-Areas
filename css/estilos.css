@@ -135,6 +135,14 @@ dl { margin: 0; }
 .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
 .ph:hover img { transform: scale(1.04); }
 .ph .pc { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 9px 6px; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.7)); color: #fff; font-size: 12px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph .pc .yr { font: 600 10px var(--f-mono); font-style: normal; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; margin-right: 5px; }
+.ph .pc .yr.new { background: #1f9d55; }
+b.yr { font: 600 11px var(--f-mono); color: #fff; background: #1f9d55; border-radius: 4px; padding: 0 4px; }
+.psort { display: inline-flex; gap: 2px; background: var(--soft); border-radius: 8px; padding: 2px; margin: 0 0 8px; }
+.psort button { border: 0; background: none; padding: 0 9px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--ink); }
+.psort button[aria-pressed="true"] { background: var(--sheet); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.sat { font-size: 12px; margin: 0 0 8px; color: var(--muted); }
+.sat b { color: var(--ink); font-weight: 600; }
 .ph .pc b { font-family: var(--f-mono); font-weight: 500; margin-right: 4px; }
 .ph.doc { display: grid; place-items: center; align-content: center; gap: 4px; cursor: pointer; border: 1px solid var(--line); background: var(--soft); }
 .ph.doc .ic { font: 700 15px var(--f-display); color: #fff; background: #c22f4f; border-radius: 6px; padding: 5px 9px; }

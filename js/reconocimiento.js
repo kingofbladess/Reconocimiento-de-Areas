@@ -106,6 +106,7 @@ function renderRecon() {
     ["Altitud", ev != null ? `${fmtNum(Math.round(ev))} m` : busyOr("terrain", "—")],
     ["Terreno", t ? terrainClass(t)[0] : busyOr("terrain", "—")],
     ["Pendiente", t ? `${t.slope.toFixed(0)}° hacia el ${rumbo(t.aspect)}` : busyOr("terrain", "—")],
+    ["Imagen satelital", S.sat ? satLine(S.sat) : "—"],
     ["Clima ahora", w && w.current ? `${Math.round(w.current.temperature_2m)}° · ${wmo(w.current.weather_code)[0]} · viento ${Math.round(w.current.wind_speed_10m)} km/h` : busyOr("weather", "—")],
   ];
   // Lo que hay alrededor

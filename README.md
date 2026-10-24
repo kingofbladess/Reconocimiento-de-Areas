@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza) y tus propios lugares con fotos y PDF.
 
-Versión 3.7 · octubre 2026
+Versión 3.8 · octubre 2026
 
 ## Cómo abrirla
 
@@ -41,7 +41,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Terreno:** tipo de relieve, pendiente y orientación, desnivel, mapa de alturas sombreado, perfiles, uso del suelo, vías y trochas cercanas, y alertas de inundación o deslizamiento. Al pasar el cursor o el dedo por el mapa de alturas o por un perfil, el punto se marca en el mapa con su altitud y distancia.
 - **Vista 3D:** botón **3D** del mapa o de la ficha (o tecla `3`). Muestra el relieve real con imagen satelital, relieve topográfico o mapa; se puede inclinar (Cenital, Oblicua, Rasante), girar, exagerar la altura del relieve (×1 a ×4) y hacer que la cámara gire sola alrededor del punto. Incluye el punto elegido, el radio, el trazo de medición y los elementos del entorno. Clic derecho o Ctrl + arrastrar gira e inclina; en el teléfono, dos dedos.
 - **Clima:** condiciones actuales, próximas 24 horas, pronóstico de 7 días y calidad del aire.
-- **Fotos** geolocalizadas de Wikimedia Commons y artículos de Wikipedia cercanos.
+- **Fotos** geolocalizadas de Wikimedia Commons: primero las de este año (marcadas con el año) y luego las más recientes, cada grupo ordenado por cercanía al punto; también se pueden ordenar solo por distancia. Se indica la fecha de captura y el detalle (en metros) de la imagen satelital del punto. Artículos de Wikipedia cercanos.
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
 - **Herramientas:** medir distancias con perfil del terreno que se actualiza solo (los puntos se arrastran para corregir el trazo y un toque los quita), capa **Pendientes** que colorea las laderas según su inclinación, capas Satélite, Mapa, Relieve y Sombras, y **Mi ubicación**.
 - **Manejo del mapa:** zoom continuo con la rueda, doble toque para acercar sin abrir la ficha, altitud bajo el cursor, y menú con clic derecho o manteniendo presionado (ver ficha, ver en 3D, medir desde ahí, copiar coordenadas). Atajos: `3` vista 3D, `M` medir, `P` pendientes, `/` buscar, `Esc` cerrar.

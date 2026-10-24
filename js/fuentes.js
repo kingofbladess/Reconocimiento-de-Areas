@@ -71,28 +71,72 @@ async function wikiSummary(title, lang = "es") {
 const commonsFile = (name, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name.replace(/^File:/, ""))}?width=${w}`;
 
 // ---------- Fotos (Wikimedia Commons) ----------
+// Dos consultas a la vez: las 50 fotos tomadas más cerca del punto y las 50 subidas más recientemente en la zona,
+// para que las de este año aparezcan aunque haya muchas fotos antiguas más cerca.
+const THIS_YEAR = new Date().getFullYear();
+const PHOTO_PROPS = "prop=imageinfo|coordinates&iiprop=url|extmetadata|mime|timestamp&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName|ImageDescription|DateTimeOriginal|ObjectName&iiextmetadatalanguage=es&colimit=100";
+const PHOTO_SORT_KEY = "rv-fotos-orden";
+let photoSort = (() => { try { return localStorage.getItem(PHOTO_SORT_KEY) || "recientes"; } catch (_) { return "recientes"; } })();
+// "recientes": primero las de este año, luego las de los dos anteriores y después el resto; en cada grupo, las más cercanas.
+// "cercanas": solo por distancia al punto.
+function sortPhotos() {
+  const age = p => p.year == null ? 9 : p.year >= THIS_YEAR ? 0 : p.year >= THIS_YEAR - 2 ? 1 : 2;
+  const byDist = (a, b) => (a.d ?? 1e9) - (b.d ?? 1e9);
+  S.photos.sort(photoSort === "cercanas" ? byDist : (a, b) => age(a) - age(b) || byDist(a, b));
+}
+function setPhotoSort(v) { photoSort = v; try { localStorage.setItem(PHOTO_SORT_KEY, v); } catch (_) {} sortPhotos(); renderPhotos(); }
 async function loadPhotos(id) {
   S.busy.photos = true; renderPhotos();
-  const r = Math.min(10000, Math.max(2000, S.radius * 2));
+  const r = Math.min(10000, Math.max(2000, S.radius * 2)), { lat, lon } = S.point;
   try {
-    const d = await getJSON(`${COMMONS}action=query&generator=geosearch&ggsnamespace=6&ggscoord=${S.point.lat}|${S.point.lon}&ggsradius=${r}&ggslimit=50&prop=imageinfo|coordinates&iiprop=url|extmetadata|mime&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName|ImageDescription|DateTimeOriginal|ObjectName&iiextmetadatalanguage=es&colimit=50`);
+    const near = getJSON(`${COMMONS}action=query&generator=geosearch&ggsnamespace=6&ggscoord=${lat}|${lon}&ggsradius=${r}&ggslimit=50&${PHOTO_PROPS}`);
+    const recent = getJSON(`${COMMONS}action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(`filetype:bitmap nearcoord:${r / 1000}km,${lat},${lon}`)}&gsrsort=create_timestamp_desc&gsrlimit=50&${PHOTO_PROPS}`).catch(() => null);
+    const [d1, d2] = await Promise.all([near, recent]);
     if (id !== reqId) return;
-    const pages = Object.values((d.query && d.query.pages) || {});
-    S.photos = pages.filter(p => p.imageinfo && /^image\/(jpeg|png|webp)/.test(p.imageinfo[0].mime)).map(p => {
+    const pages = new Map();
+    for (const d of [d1, d2]) for (const p of Object.values((d && d.query && d.query.pages) || {})) if (!pages.has(p.title)) pages.set(p.title, p);
+    S.photos = [...pages.values()].filter(p => p.imageinfo && /^image\/(jpeg|png|webp)/.test(p.imageinfo[0].mime)).map(p => {
       const ii = p.imageinfo[0], m = ii.extmetadata || {}, c = p.coordinates && p.coordinates[0];
+      // Fecha de la toma (EXIF); si no la trae, la de subida a Commons
+      const taken = stripHtml(m.DateTimeOriginal && m.DateTimeOriginal.value), ty = (taken.match(/\b(19|20)\d\d\b/) || [])[0];
+      const up = ii.timestamp ? ii.timestamp.slice(0, 10) : "";
       return {
         title: p.title, thumb: ii.thumburl || ii.url, page: ii.descriptionurl,
         name: stripHtml(m.ObjectName && m.ObjectName.value) || p.title.replace(/^File:/, "").replace(/\.[a-z]+$/i, "").replace(/_/g, " "),
         desc: stripHtml(m.ImageDescription && m.ImageDescription.value).slice(0, 300),
         author: stripHtml(m.Artist && m.Artist.value) || "Autor desconocido",
         license: (m.LicenseShortName && m.LicenseShortName.value) || "",
-        date: stripHtml(m.DateTimeOriginal && m.DateTimeOriginal.value).slice(0, 10),
+        date: ty ? taken.slice(0, 10) : "", up,
+        year: ty ? +ty : up ? +up.slice(0, 4) : null,
         d: c ? dist(S.point, { lat: c.lat, lon: c.lon }) : null,
       };
-    }).sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9));
+    }).filter(p => p.d == null || p.d <= r * 1.05);
+    sortPhotos();
   } catch (e) { if (id === reqId) S.errs.photos = e.message; }
   if (id === reqId) { S.busy.photos = false; renderPhotos(); renderHead(); renderNav(); }
   if (id === reqId && S.photos.length) translatePhotos(id);
+}
+
+// ---------- Imagen satelital del mapa (Esri World Imagery) ----------
+// Fecha de captura, detalle y satélite de la imagen que se ve en la capa Satélite en este punto
+const SAT_ES = { WV01: "WorldView-1", WV02: "WorldView-2", WV03: "WorldView-3", WV04: "WorldView-4", GE01: "GeoEye-1", QB02: "QuickBird", IK01: "IKONOS", PHR: "Pléiades", SPOT: "SPOT", Aerial: "Foto aérea" };
+async function loadSat(id) {
+  const { lat, lon } = S.point, e = 0.0005;
+  try {
+    const d = await getJSON(`https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/identify?geometry=${lon},${lat}&geometryType=esriGeometryPoint&sr=4326&layers=all:4&tolerance=0&mapExtent=${lon - e},${lat - e},${lon + e},${lat + e}&imageDisplay=100,100,96&returnGeometry=false&f=json`, {}, 15000, 1);
+    if (id !== reqId) return;
+    const best = ((d && d.results) || []).map(r => r.attributes || {})
+      .map(a => ({ date: /^\d{8}$/.test(a["DATE (YYYYMMDD)"]) ? a["DATE (YYYYMMDD)"] : null, res: parseFloat(a["RESOLUTION (M)"]), acc: parseFloat(a["ACCURACY (M)"]), sat: a.DESCRIPTION, src: a.SOURCE }))
+      .filter(a => a.res > 0).sort((a, b) => a.res - b.res)[0];
+    S.sat = best ? { ...best, sat: SAT_ES[best.sat] || (best.sat && best.sat !== "Null" ? best.sat : "") } : null;
+  } catch (_) { if (id === reqId) S.sat = null; }
+  if (id === reqId) { renderPhotos(); scheduleRecon(); }
+}
+const satDate = s => s && s.date ? new Date(+s.date.slice(0, 4), +s.date.slice(4, 6) - 1, +s.date.slice(6, 8)).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric" }) : "";
+function satLine(s) {
+  if (!s) return "";
+  const res = s.res < 1 ? `${String(s.res).replace(".", ",")} m` : `${fmtNum(s.res)} m`;
+  return `${s.date ? satDate(s) : "sin fecha"} · detalle ${res}${s.sat ? ` · ${esc(s.sat)}` : ""}${s.src && s.src !== "Null" ? ` (${esc(s.src)})` : ""}`;
 }
 // Títulos y descripciones de Commons suelen estar en inglés: se traducen en segundo plano y se vuelve a dibujar
 async function translatePhotos(id) {

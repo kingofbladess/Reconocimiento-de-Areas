@@ -152,14 +152,18 @@ const tile = (g, i, it) => it.pdf
 function renderPhotos() {
   const el = $("#s-fotos"); if (!el) return;
   const r = Math.min(10000, Math.max(2000, S.radius * 2));
-  const h = `<h3>Fotos del lugar <small>Wikimedia Commons · ${fmtDist(r)}</small></h3>`;
-  if (S.busy.photos) { el.innerHTML = h + `<div class="loading">Buscando fotos…</div>`; return; }
-  if (S.errs.photos) { el.innerHTML = h + errBox("photos", S.errs.photos); return; }
-  if (!S.photos.length) { el.innerHTML = h + `<p class="src">Nadie ha subido fotos geolocalizadas en esta zona todavía. Prueba un radio mayor en “Entorno”, abre Street View desde Coordenadas o sube las tuyas con “Guardar como mi lugar”.</p>`; return; }
+  const nNew = S.photos.filter(p => p.year >= THIS_YEAR).length;
+  const h = `<h3>Fotos del lugar <small>Wikimedia Commons · ${fmtDist(r)}${nNew ? ` · ${nNew} de ${THIS_YEAR}` : ""}</small></h3>`;
+  // Fecha y detalle de la imagen satelital que muestra la capa Satélite en este punto
+  const sat = S.sat ? `<p class="sat">Imagen satelital del punto: <b>${satLine(S.sat)}</b>${S.sat.date && +S.sat.date.slice(0, 4) < THIS_YEAR - 1 ? ` <span class="src">· es la más reciente de alta resolución disponible gratis aquí</span>` : ""}</p>` : "";
+  if (S.busy.photos) { el.innerHTML = h + sat + `<div class="loading">Buscando fotos…</div>`; return; }
+  if (S.errs.photos) { el.innerHTML = h + sat + errBox("photos", S.errs.photos); return; }
+  if (!S.photos.length) { el.innerHTML = h + sat + `<p class="src">Nadie ha subido fotos geolocalizadas en esta zona todavía. Prueba un radio mayor en “Entorno”, abre Street View desde Coordenadas o sube las tuyas con “Guardar como mi lugar”.</p>`; return; }
   const items = viewItems("c"), show = items.slice(0, 7);
-  el.innerHTML = h + `<div class="gallery">${show.map((it, i) => tile("c", i, it)).join("")}</div>`
+  const seg = `<div class="psort" role="group" aria-label="Orden de las fotos">${[["recientes", `Recientes primero`], ["cercanas", "Más cercanas"]].map(([k, t]) => `<button data-photosort="${k}" aria-pressed="${photoSort === k}">${t}</button>`).join("")}</div>`;
+  el.innerHTML = h + sat + seg + `<div class="gallery">${show.map((it, i) => tile("c", i, it)).join("")}</div>`
     + (items.length > show.length ? `<button class="btn more" data-album="c">Ver las ${items.length} fotos</button>` : "")
-    + `<p class="src" style="margin-top:8px">Toca una foto para verla en grande con su autor y licencia.</p>`;
+    + `<p class="src" style="margin-top:8px">${nNew ? `Las marcadas con <b class="yr">${THIS_YEAR}</b> son de este año. ` : `No hay fotos de ${THIS_YEAR} subidas en esta zona; se muestran primero las más recientes. `}Toca una foto para verla en grande con su fecha, autor y licencia.</p>`;
 }
 function renderFiles() {
   const el = $("#s-archivos"); if (!el) return;

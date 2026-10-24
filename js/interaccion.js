@@ -44,6 +44,8 @@ sheetBody.addEventListener("click", async e => {
   if (drop) return $(drop.id === "drop" ? "#fileIn" : "#fileHere").click();
   const vw = e.target.closest("[data-view]");
   if (vw) { const [g, i] = vw.dataset.view.split(":"); return openViewer(g, +i); }
+  const ps = e.target.closest("[data-photosort]");
+  if (ps) return setPhotoSort(ps.dataset.photosort);
   const al = e.target.closest("[data-album]");
   if (al) return openAlbum(al.dataset.album);
   const nav = e.target.closest(".nav a");
