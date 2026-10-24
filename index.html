@@ -95,8 +95,9 @@
     <div class="seg" id="v3dBase" role="group" aria-label="Imagen del terreno"><button data-b="satelite" aria-pressed="true">Satélite</button><button data-b="relieve" aria-pressed="false">Relieve</button><button data-b="mapa" aria-pressed="false">Mapa</button></div>
     <div class="seg" id="v3dView" role="group" aria-label="Inclinación de la cámara"><button data-p="0" title="Vista desde arriba">Cenital</button><button data-p="55">Oblicua</button><button data-p="78" title="A ras del terreno">Rasante</button></div>
     <label class="v3d-exag" title="Exagera la altura del relieve">Relieve <input type="range" id="v3dExag" min="1" max="4" step="0.25" value="1.5"> <b id="v3dExagVal">×1,5</b></label>
-    <button class="tool" id="v3dShade" aria-pressed="true">Sombras</button>
+    <div class="seg" id="v3dLayers" role="group" aria-label="Capas de la vista 3D"><button data-l="sombras" aria-pressed="true">Sombras</button><button data-l="curvas" aria-pressed="false" title="Curvas de nivel con su cota">Curvas</button><button data-l="nombres" aria-pressed="true" title="Ciudades, picos, ríos y vías">Nombres</button><button data-l="edificios" aria-pressed="true">Edificios</button></div>
     <button class="tool" id="v3dOrbit" aria-pressed="false" title="Girar la cámara alrededor del centro">Girar</button>
+    <button class="tool" id="v3dTrace" hidden title="La cámara recorre el trazo de medición">Recorrer trazo</button>
     <button class="tool" id="v3dNorth" title="Orientar al norte">Norte</button>
     <button class="tool" id="v3dCenter" title="Volver al punto elegido">Al punto</button>
   </div>

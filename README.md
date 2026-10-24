@@ -39,7 +39,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Búsqueda** por nombre, coordenadas decimales o GMS (`10°30'22"N 66°54'53"O`). También puedes tocar el mapa o abrir un enlace `#lat,lon`.
 - **Ficha del punto:** coordenadas (decimal, GMS, UTM), estado, municipio, información de Wikipedia/Wikidata y enlaces a Google Maps, Street View y Google Earth.
 - **Terreno:** tipo de relieve, pendiente y orientación, desnivel, mapa de alturas sombreado, perfiles, uso del suelo, vías y trochas cercanas, y alertas de inundación o deslizamiento. Al pasar el cursor o el dedo por el mapa de alturas o por un perfil, el punto se marca en el mapa con su altitud y distancia.
-- **Vista 3D:** botón **3D** del mapa o de la ficha (o tecla `3`). Muestra el relieve real con imagen satelital, relieve topográfico o mapa; se puede inclinar (Cenital, Oblicua, Rasante), girar, exagerar la altura del relieve (×1 a ×4) y hacer que la cámara gire sola alrededor del punto. Incluye el punto elegido, el radio, el trazo de medición y los elementos del entorno. Clic derecho o Ctrl + arrastrar gira e inclina; en el teléfono, dos dedos.
+- **Vista 3D:** botón **3D** del mapa o de la ficha (o tecla `3`). Muestra el relieve real con imagen satelital, relieve topográfico o mapa; se puede inclinar (Cenital, Oblicua, Rasante), girar, exagerar la altura del relieve (×1 a ×4) y hacer que la cámara gire sola alrededor del punto. Incluye el punto elegido, el radio, el trazo de medición y los elementos del entorno. Capas: **Sombras**, **Curvas** de nivel con su cota (calculadas del modelo SRTM), **Nombres** nítidos en español (ciudades, picos con altura, ríos y vías) y **Edificios** en volumen. Si hay un trazo de medición, **Recorrer trazo** hace volar la cámara a lo largo de él. Clic derecho o Ctrl + arrastrar gira e inclina; en el teléfono, dos dedos.
 - **Clima:** condiciones actuales, próximas 24 horas, pronóstico de 7 días y calidad del aire.
 - **Fotos** geolocalizadas de Wikimedia Commons: primero las de este año (marcadas con el año) y luego las más recientes, cada grupo ordenado por cercanía al punto; también se pueden ordenar solo por distancia. Se indica la fecha de captura y el detalle (en metros) de la imagen satelital del punto. Artículos de Wikipedia cercanos.
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
@@ -102,7 +102,7 @@ Los archivos `js/` comparten variables globales y deben cargarse en el orden de 
 
 ## Servicios que usa
 
-Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL (vista 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata y Wikimedia Commons.
+Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL y maplibre-contour (vista 3D y curvas de nivel), OpenFreeMap (nombres y edificios en 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata y Wikimedia Commons.
 
 Hace falta internet para consultar datos nuevos. Sin conexión se abre la app con los mapas ya vistos o descargados, las fichas ya abiertas y tus lugares guardados. Si un servicio está saturado, la sección muestra el aviso y un botón **Reintentar**.
 
