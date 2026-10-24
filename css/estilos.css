@@ -165,10 +165,6 @@ dl { margin: 0; }
 .row b { display: block; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
 .row span { color: var(--muted); font-size: 12px; }
 .row .d { font: 12px var(--f-mono); color: var(--ink); text-align: right; white-space: nowrap; }
-.mag { display: inline-grid; place-items: center; width: 38px; height: 26px; border-radius: 6px; font: 600 13px var(--f-mono); color: #fff; }
-.qrow { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; cursor: pointer; }
-.qrow span { color: var(--muted); font-size: 12px; }
-.qrow .mag { color: var(--fg, #fff); font-size: 13px; }
 
 /* Terreno */
 .terr { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; }
@@ -368,6 +364,24 @@ section.blk[id^="s-"] > h3::after { content: ""; flex: none; width: 8px; height:
 section.blk.fold > h3 { margin-bottom: 0; }
 section.blk.fold > h3::after { transform: rotate(-45deg); }
 section.blk.fold > :not(h3) { display: none !important; }
+
+/* Reconocimiento del Área (GPS) */
+.tool.recon-btn { background: var(--accent); color: var(--accent-ink); }
+.tool.recon-btn:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.tool.recon-btn.busy svg { animation: spin 1.2s linear infinite; }
+section.recon { background: color-mix(in srgb, var(--accent) 6%, var(--sheet)); }
+.recon .fact b { font: 600 13px/1.3 var(--f-body); }
+.recon .fact:nth-child(-n+2) b { font: 500 12.5px/1.3 var(--f-mono); }
+.rlist { display: grid; }
+.rrow { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.rrow[data-feat] { cursor: pointer; }
+.rrow[data-feat]:hover { background: var(--soft); }
+.rrow .ri { font-size: 16px; line-height: 1.3; text-align: center; }
+.rrow b { display: block; font-weight: 600; font-size: 13px; }
+.rrow span span { color: var(--muted); }
+.ralert { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.ralert li { font-size: 13px; color: var(--warn); padding-left: 16px; position: relative; }
+.ralert li::before { content: "⚠"; position: absolute; left: 0; }
 
 /* Panel sin conexión */
 .zrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }

@@ -15,7 +15,7 @@ const MapButtons = L.Control.extend({
   onAdd() {
     const d = L.DomUtil.create("div", "leaflet-bar map-btns");
     d.innerHTML = `<a href="#" role="button" id="mb3d" title="Vista 3D del terreno (tecla 3)" class="mb-3d">3D</a>
-      <a href="#" role="button" id="mbLocate" title="Mi ubicación"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></a>`;
+      <a href="#" role="button" id="mbLocate" title="Mi ubicación: reconocimiento del área"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></a>`;
     L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
     return d;
   },
@@ -50,7 +50,7 @@ $("#layers").addEventListener("click", e => {
 const pinIcon = L.divIcon({ className: "", html: '<div class="pin"></div>', iconSize: [24, 24], iconAnchor: [12, 28], popupAnchor: [0, -26] });
 const wIcon = L.divIcon({ className: "", html: '<div class="wpin">W</div>', iconSize: [22, 22], iconAnchor: [11, 11] });
 let pointMarker = null, radiusCircle = null, maskLayer = null;
-const featLayer = L.layerGroup().addTo(map), wikiLayer = L.layerGroup().addTo(map), quakeLayer = L.layerGroup().addTo(map);
+const featLayer = L.layerGroup().addTo(map), wikiLayer = L.layerGroup().addTo(map);
 
 // Coordenadas y altitud bajo el cursor
 const HOVER = matchMedia("(hover: hover)").matches;

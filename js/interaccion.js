@@ -2,10 +2,10 @@
 "use strict";
 
 // ---------- Interacción con la ficha ----------
-const RETRY = { weather: id => { loadWeather(id); loadAir(id); }, photos: loadPhotos, wiki: loadWiki, feats: loadFeatures, quakes: loadQuakes, info: loadInfo, terrain: loadTerrain, ground: loadGround };
+const RETRY = { weather: id => { loadWeather(id); loadAir(id); }, photos: loadPhotos, wiki: loadWiki, feats: loadFeatures, info: loadInfo, terrain: loadTerrain, ground: loadGround };
 function closeSheet() {
   S.point = null; S.custom = null; if (pointMarker) { map.removeLayer(pointMarker); pointMarker = null; } if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
-  featLayer.clearLayers(); wikiLayer.clearLayers(); quakeLayer.clearLayers(); reqId++; renderEmpty();
+  featLayer.clearLayers(); wikiLayer.clearLayers(); reqId++; renderEmpty();
 }
 sheetBody.addEventListener("click", async e => {
   const cp = e.target.closest("[data-copy]");
@@ -54,13 +54,6 @@ sheetBody.addEventListener("click", async e => {
   if (ft) { const f = S.feats.find(x => x.id === ft.dataset.feat); if (f) flyOpen([f.lat, f.lon], f.marker); return; }
   const wk = e.target.closest("[data-wiki]");
   if (wk) { const w = S.wiki[+wk.dataset.wiki]; let m = null; wikiLayer.eachLayer(l => { const p = l.getLatLng(); if (p.lat === w.lat && p.lng === w.lon) m = l; }); flyOpen([w.lat, w.lon], m, 16); return; }
-  const qk = e.target.closest("[data-quake]");
-  if (qk) {
-    const q = S.quakes[+qk.dataset.quake]; quakeLayer.clearLayers();
-    const m = L.circleMarker([q.lat, q.lon], { radius: 6 + q.mag * 2, color: magColor(q.mag), weight: 2, fillOpacity: 0.35 })
-      .bindPopup(`<b>M${q.mag.toFixed(1)}</b> · ${esc(placeEs(q.place))}<br>${new Date(q.time).toLocaleString("es-VE")}<br>${Math.round(q.depth)} km de profundidad<br><a href="${esc(q.url)}" target="_blank" rel="noopener">Detalle en USGS</a>`).addTo(quakeLayer);
-    map.flyToBounds(L.latLngBounds([[S.point.lat, S.point.lon], [q.lat, q.lon]]).pad(0.3), { duration: 0.7, maxZoom: 9 }); setTimeout(() => m.openPopup(), 750); return;
-  }
 });
 sheetBody.addEventListener("keydown", e => { const d = e.target.closest(".drop"); if (d && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); d.click(); } });
 sheetBody.addEventListener("change", e => {

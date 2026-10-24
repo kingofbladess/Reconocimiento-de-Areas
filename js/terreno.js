@@ -171,6 +171,7 @@ function roadLine(label, r) {
   return `<div class="kv"><dt>${label}</dt><dd style="font:14px var(--f-body)">${esc(kind)}${nm}${esc(surf)}</dd><span class="src" style="white-space:nowrap">${fmtDist(r.d)} ${rumbo(bearing(S.point, r))}</span></div>`;
 }
 function renderTerrain() {
+  scheduleRecon();
   const el = $("#s-terreno"); if (!el) return;
   const t = S.terrain;
   let top;

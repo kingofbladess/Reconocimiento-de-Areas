@@ -1,4 +1,4 @@
-// Wikipedia/Wikidata, fotos de Commons, clima, calidad del aire y sismos
+// Wikipedia/Wikidata, fotos de Commons, clima y calidad del aire
 "use strict";
 
 // ---------- Información del lugar (Wikidata + Wikipedia) ----------
@@ -152,29 +152,4 @@ function aqiInfo(v) {
   if (v <= 50) return ["Buena", "#5cc06a"]; if (v <= 100) return ["Moderada", "#f2d14b"];
   if (v <= 150) return ["Dañina para sensibles", "#f39b4b"]; if (v <= 200) return ["Dañina", "#f06262"];
   return ["Muy dañina", "#b06ad6"];
-}
-
-// ---------- Sismos recientes (USGS) ----------
-async function loadQuakes(id) {
-  S.busy.quakes = true; renderQuakes();
-  const start = new Date(Date.now() - 365 * 86400e3).toISOString().slice(0, 10);
-  try {
-    const d = await getJSON(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${S.point.lat}&longitude=${S.point.lon}&maxradiuskm=300&starttime=${start}&minmagnitude=2.5&orderby=time&limit=30`);
-    if (id !== reqId) return;
-    S.quakes = (d.features || []).map(f => ({ mag: f.properties.mag, place: f.properties.place, time: f.properties.time, url: f.properties.url,
-      lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], depth: f.geometry.coordinates[2],
-      d: dist(S.point, { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] }) }));
-  } catch (e) { if (id === reqId) S.errs.quakes = e.message; }
-  if (id === reqId) { S.busy.quakes = false; renderQuakes(); renderNav(); }
-}
-const magColor = m => m >= 5 ? "#c22f4f" : m >= 4 ? "#e0661f" : m >= 3 ? "#d99a06" : "#4f8f87";
-const magInk = m => m >= 3 && m < 4 ? "#1d1500" : "#fff";
-// USGS describe los sismos en inglés ("22 km SSE of Güiria, Venezuela")
-function placeEs(s) {
-  if (!s) return "Sin descripción";
-  const m = s.match(/^(\d+(?:\.\d+)?) km ([NSEW]{1,3}) of (.+)$/);
-  if (m) return `A ${m[1]} km al ${m[2].replace(/W/g, "O")} de ${m[3]}`;
-  return s.replace(/^(near the )?coast of /i, "Costa de ").replace(/^offshore /i, "Frente a la costa de ").replace(/^northern /i, "Norte de ")
-    .replace(/^southern /i, "Sur de ").replace(/^eastern /i, "Este de ").replace(/^western /i, "Oeste de ").replace(/ region$/i, " (región)")
-    .replace(/Trinidad and Tobago/g, "Trinidad y Tobago").replace(/Brazil/g, "Brasil").replace(/Caribbean Sea/g, "Mar Caribe");
 }

@@ -59,8 +59,8 @@ async function selectPoint(lat, lon, opts = {}) {
   const id = ++reqId;
   const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
   NET.staleAt = null;
-  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, weather: null, air: null, info: null, photos: [], wiki: [], feats: [], quakes: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
-  featLayer.clearLayers(); wikiLayer.clearLayers(); quakeLayer.clearLayers();
+  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, recon: !!opts.recon, weather: null, air: null, info: null, photos: [], wiki: [], feats: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
+  featLayer.clearLayers(); wikiLayer.clearLayers();
   if (pointMarker) pointMarker.setLatLng([lat, lon]);
   else pointMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true, zIndexOffset: 1000 }).addTo(map)
     .on("dragend", e => { const p = e.target.getLatLng(); selectPoint(p.lat, p.lng); });
@@ -72,7 +72,7 @@ async function selectPoint(lat, lon, opts = {}) {
   try { history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`); } catch (_) {}
   renderSheet();
   if (opts.form) renderForm(null);
-  loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadWiki(id); loadFeatures(id); loadGround(id); loadQuakes(id);
+  loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadWiki(id); loadFeatures(id); loadGround(id);
   if (!S.place) await reverse(id);
   if (id !== reqId) return;
   if (!areaShape && S.place && S.place.address && S.place.address.country_code && !AREA_CC.includes(S.place.address.country_code)) {

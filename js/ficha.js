@@ -23,19 +23,19 @@ function renderSheet() {
     <section class="blk" id="s-clima"></section>
     <section class="blk" id="s-fotos"></section>
     <section class="blk" id="s-cerca"></section>
-    <section class="blk" id="s-entorno"></section>
-    <section class="blk" id="s-sismos"></section>`;
+    <section class="blk" id="s-entorno"></section>`;
   sheetBody.scrollTop = 0;
   applyFolds();
-  renderHead(); renderNav(); renderFiles(); renderCoords(); renderTerrain(); renderWeather(); renderPhotos(); renderWiki(); renderFeats(); renderQuakes();
+  renderHead(); renderNav(); renderFiles(); renderCoords(); renderTerrain(); renderWeather(); renderPhotos(); renderWiki(); renderFeats();
 }
 function renderNav() {
   const n = v => v ? `<span class="n">${v}</span>` : "";
   const el = $("#nav"); if (!el) return;
   el.innerHTML = (S.custom ? `<a href="#s-archivos">Mis archivos${n(S.custom.files.length)}</a>` : "")
-    + `<a href="#s-coords">Coordenadas</a><a href="#s-terreno">Terreno</a><a href="#s-clima">Clima</a><a href="#s-fotos">Fotos${n(S.photos.length)}</a><a href="#s-cerca">Cerca${n(S.wiki.length)}</a><a href="#s-entorno">Entorno${n(S.feats.length)}</a><a href="#s-sismos">Sismos${n(S.quakes.length)}</a>`;
+    + `<a href="#s-coords">Coordenadas</a><a href="#s-terreno">Terreno</a><a href="#s-clima">Clima</a><a href="#s-fotos">Fotos${n(S.photos.length)}</a><a href="#s-cerca">Cerca${n(S.wiki.length)}</a><a href="#s-entorno">Entorno${n(S.feats.length)}</a>`;
 }
 function renderHead() {
+  scheduleRecon();
   const el = $("#head"); if (!el) return;
   const p = S.place, ad = adminOf(p), info = S.info, my = S.custom;
   const name = (my && my.name) || S.title || (p && (p.name || (p.display_name || "").split(",")[0])) || "Punto seleccionado";
@@ -66,6 +66,7 @@ function renderHead() {
       <div class="cap"><h2>${my ? "★ " : ""}${esc(name)}</h2><p>${esc(line || (p ? p.display_name : "Buscando dirección…"))}</p></div></div>
     ${NET.staleAt ? `<div class="stale">Sin conexión: datos guardados el ${new Date(NET.staleAt).toLocaleString("es-VE", { dateStyle: "medium", timeStyle: "short" })} (pueden no estar al día)</div>` : ""}
     <div class="actions">${acts}<button class="btn" data-act="share">Copiar enlace</button></div>
+    ${S.recon ? `<section class="blk recon" id="s-recon"></section>` : ""}
     <section class="blk" id="s-resumen"><h3>${my ? "Mi lugar" : "Sobre este lugar"}</h3>${about}</section>`;
 }
 function fmtOffset(s) { const sg = s < 0 ? "-" : "+"; s = Math.abs(s); return `${sg}${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}`; }
@@ -93,6 +94,7 @@ function renderCoords() {
     </div><p class="src" style="margin-top:10px">Arrastra el marcador amarillo para ajustar el punto.</p>`;
 }
 function renderWeather() {
+  scheduleRecon();
   const el = $("#s-clima"); if (!el) return;
   if (S.errs.weather) { el.innerHTML = `<h3>Meteorología</h3>${errBox("weather", S.errs.weather)}`; return; }
   const w = S.weather;
@@ -170,6 +172,7 @@ function renderFiles() {
       <input type="file" id="fileHere" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf" hidden>`;
 }
 function renderWiki() {
+  scheduleRecon();
   const el = $("#s-cerca"); if (!el) return;
   const h = `<h3>Lugares documentados cerca <small>Wikipedia · 10 km</small></h3>`;
   if (S.busy.wiki) { el.innerHTML = h + `<div class="loading">Buscando artículos…</div>`; return; }
@@ -180,6 +183,7 @@ function renderWiki() {
     + `<p class="src">Toca un lugar para verlo en el mapa; el enlace al artículo está en su globo.</p>`;
 }
 function renderFeats() {
+  scheduleRecon();
   const el = $("#s-entorno"); if (!el) return;
   const radios = [250, 500, 1000, 2000, 5000];
   const h = `<h3>Entorno <small>OpenStreetMap</small></h3><div class="ctrl-row"><label for="radius">Radio de análisis</label>
@@ -194,17 +198,4 @@ function renderFeats() {
       <span><b>${esc(f.name || f.type)}</b><span>${esc(f.name ? f.type : CATS[f.cat].label)}${f.parts > 1 ? ` · ${f.parts} tramos` : ""}</span></span>
       <span class="d">${fmtDist(f.d)}<br><span>${rumbo(bearing(S.point, f))}</span></span></button>`).join("")
     : `<p class="src">No hay elementos de estas categorías registrados en el radio elegido. Prueba uno mayor.</p>`);
-}
-function renderQuakes() {
-  const el = $("#s-sismos"); if (!el) return;
-  const h = `<h3>Sismos recientes <small>USGS · 300 km · último año · M2.5+</small></h3>`;
-  if (S.busy.quakes) { el.innerHTML = h + `<div class="loading">Consultando actividad sísmica…</div>`; return; }
-  if (S.errs.quakes) { el.innerHTML = h + errBox("quakes", S.errs.quakes); return; }
-  if (!S.quakes.length) { el.innerHTML = h + `<p class="src">No se registraron sismos de magnitud 2.5 o mayor en 300 km durante el último año.</p>`; return; }
-  const max = S.quakes.reduce((a, q) => q.mag > a.mag ? q : a);
-  el.innerHTML = h + `<p class="src" style="margin:0 0 6px">${S.quakes.length} eventos. El mayor fue de magnitud ${max.mag.toFixed(1)} a ${fmtDist(max.d)}.</p>`
-    + S.quakes.map((q, i) => `<button class="qrow" data-quake="${i}"><span class="mag" style="background:${magColor(q.mag)};--fg:${magInk(q.mag)}">${q.mag.toFixed(1)}</span>
-      <span><b style="font-weight:600;font-size:14px;color:var(--ink)">${esc(placeEs(q.place))}</b><br><span>${new Date(q.time).toLocaleString("es-VE", { dateStyle: "medium", timeStyle: "short" })} · ${Math.round(q.depth)} km de profundidad</span></span>
-      <span class="d" style="font:12px var(--f-mono)">${fmtDist(q.d)}</span></button>`).join("")
-    + `<p class="src" style="margin-top:8px">Para boletines oficiales consulta FUNVISIS.</p>`;
 }

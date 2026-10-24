@@ -1,8 +1,8 @@
 // Service worker: abre la app al instante (también sin conexión) y guarda las teselas del mapa ya vistas.
 // Al cambiar archivos de la app, sube VERSION: así se descargan todos juntos en la versión nueva.
-const VERSION = "v3.6.1";
+const VERSION = "v3.7.0";
 const APP = `app-${VERSION}`, LIBS = "libs-v1", TILES = "teselas-v2", ZONES = "zonas-v1", MAX_TILES = 4000;
-const MODS = ["nucleo", "mapa", "geo", "red", "espanol", "relieve", "busqueda", "fuentes", "entorno", "terreno", "mis-lugares", "ficha", "interfaz", "interaccion", "visor", "herramientas", "sin-conexion", "reporte", "vista3d", "inicio"];
+const MODS = ["nucleo", "mapa", "geo", "red", "espanol", "relieve", "busqueda", "fuentes", "entorno", "terreno", "mis-lugares", "ficha", "interfaz", "interaccion", "visor", "herramientas", "reconocimiento", "sin-conexion", "reporte", "vista3d", "inicio"];
 const SHELL = ["./", "index.html", "css/estilos.css", "manifest.webmanifest", "datos/venezuela.json", "datos/guyana.json", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css",
   "iconos/logo.svg", "iconos/icono-192.png", "iconos/icono-512.png", ...MODS.map(m => `js/${m}.js`)];
 const LIB_HOSTS = ["unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com"];

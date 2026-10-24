@@ -106,20 +106,8 @@ document.addEventListener("pointerdown", e => { if (ctxOpen() && !ctx.contains(e
 map.on("movestart", closeCtx);
 
 // ---------- Mi ubicación ----------
-let meDot = null;
-$("#mbLocate").addEventListener("click", e => {
-  e.preventDefault();
-  if (!navigator.geolocation) { toast("Este navegador no permite conocer tu ubicación"); return; }
-  toast("Buscando tu ubicación…");
-  navigator.geolocation.getCurrentPosition(p => {
-    const { latitude: lat, longitude: lon, accuracy } = p.coords;
-    if (!inArea(lat, lon)) { toast("Tu ubicación está fuera de Venezuela y Guyana"); return; }
-    if (meDot) map.removeLayer(meDot);
-    meDot = L.layerGroup([L.circle([lat, lon], { radius: accuracy, color: cssVar("--accent"), weight: 1, fillOpacity: 0.1, interactive: false }),
-      L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2.5, fillColor: cssVar("--accent"), fillOpacity: 1 }).bindPopup(`<b>Estás aquí</b><br>Precisión ±${fmtDist(accuracy)}`)]).addTo(map);
-    map.flyTo([lat, lon], Math.max(map.getZoom(), 15), { duration: 0.8 });
-  }, err => toast(err.code === 1 ? "Permiso de ubicación denegado" : "No se pudo obtener tu ubicación"), { enableHighAccuracy: true, timeout: 15000 });
-});
+// El botón de ubicación del mapa hace el Reconocimiento del Área (js/reconocimiento.js)
+$("#mbLocate").addEventListener("click", e => { e.preventDefault(); startRecon(); });
 $("#mb3d").addEventListener("click", e => { e.preventDefault(); open3D(); });
 
 // ---------- Atajos de teclado ----------

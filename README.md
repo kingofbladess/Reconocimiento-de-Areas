@@ -1,8 +1,8 @@
 # Reconocimiento Venezuela
 
-Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza), sismos y tus propios lugares con fotos y PDF.
+Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza) y tus propios lugares con fotos y PDF.
 
-Versión 3.6 · octubre 2026
+Versión 3.7 · octubre 2026
 
 ## Cómo abrirla
 
@@ -43,7 +43,6 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Clima:** condiciones actuales, próximas 24 horas, pronóstico de 7 días y calidad del aire.
 - **Fotos** geolocalizadas de Wikimedia Commons y artículos de Wikipedia cercanos.
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
-- **Sismos** del último año en 300 km (USGS).
 - **Herramientas:** medir distancias con perfil del terreno que se actualiza solo (los puntos se arrastran para corregir el trazo y un toque los quita), capa **Pendientes** que colorea las laderas según su inclinación, capas Satélite, Mapa, Relieve y Sombras, y **Mi ubicación**.
 - **Manejo del mapa:** zoom continuo con la rueda, doble toque para acercar sin abrir la ficha, altitud bajo el cursor, y menú con clic derecho o manteniendo presionado (ver ficha, ver en 3D, medir desde ahí, copiar coordenadas). Atajos: `3` vista 3D, `M` medir, `P` pendientes, `/` buscar, `Esc` cerrar.
 - **Analizar:** el botón de la ficha reúne todo lo consultado en un **reporte operativo del área de dos hojas**:
@@ -51,6 +50,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
   - Hoja 2: pronóstico de 72 h, movilidad y puentes, apoyo disponible y una **apreciación argumentada** (terreno, meteorología, movilidad, apoyo y riesgos) que concluye si el área es favorable, favorable con restricciones o desfavorable, con las recomendaciones principales.
 
   El botón **Ver versión detallada** muestra el reporte completo de varias páginas. Ambos se imprimen o guardan como PDF, o se descargan como archivo HTML.
+- **Reconocimiento del Área (GPS):** el botón azul **Reconocer mi área** (o el de ubicación del mapa) te ubica por GPS, abre el área a tu alrededor y arma un resumen: posición, altitud, terreno, clima, cobertura del suelo, acceso, agua, puentes, salud, seguridad, combustible y más, con distancia y rumbo; avisa riesgos y si te alejas del punto analizado.
 - **Mis lugares:** guarda puntos con nombre, categoría, notas, fotos y PDF. Exporta e importa respaldos.
 - **Sin conexión:** la app abre sin internet. Cada ficha que abres queda guardada (dirección, clima, terreno, entorno, fotos, Wikipedia) y sin señal se muestra con la fecha de la copia. El botón **Sin conexión** descarga la zona que ves (imagen satelital, relieve topográfico o sombras, más el modelo de elevación para altitudes, perfiles, pendientes y 3D), muestra las zonas guardadas y el espacio usado, y permite borrarlas. El mapa de calles de OpenStreetMap no se descarga en bloque porque su política lo prohíbe.
 - **En el teléfono:** la ficha es una hoja que se arrastra entre tres alturas (solo título, media pantalla y casi completa); las herramientas son una columna de íconos; los lugares destacados aparecen al tocar el buscador; y las secciones de la ficha se pliegan tocando su título.
@@ -71,7 +71,7 @@ reconocimiento-venezuela/
 │   ├── espanol.js          Nombres en español (Guyana) y traducción de textos de Wikipedia y Commons
 │   ├── relieve.js          Modelo de elevación en teselas, altitud al instante y capa de pendientes
 │   ├── busqueda.js         Búsqueda y selección de un punto
-│   ├── fuentes.js          Wikipedia, Commons, clima, aire y sismos
+│   ├── fuentes.js          Wikipedia, Commons, clima y aire
 │   ├── entorno.js          Elementos cercanos de OpenStreetMap
 │   ├── terreno.js          Relieve, pendientes, perfiles, suelo y accesos
 │   ├── mis-lugares.js      Lugares propios con fotos y PDF
@@ -80,6 +80,7 @@ reconocimiento-venezuela/
 │   ├── interaccion.js      Clics, formularios y archivos de la ficha
 │   ├── visor.js            Visor de fotos y PDF
 │   ├── herramientas.js     Avisos, medición, menú del mapa, mi ubicación y atajos
+│   ├── reconocimiento.js   Reconocimiento del Área con GPS
 │   ├── sin-conexion.js     Descarga de zonas y panel Sin conexión
 │   ├── reporte.js          Botón Analizar: reporte operativo del área
 │   ├── vista3d.js          Vista 3D del terreno (MapLibre GL)
@@ -100,7 +101,7 @@ Los archivos `js/` comparten variables globales y deben cargarse en el orden de 
 
 ## Servicios que usa
 
-Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL (vista 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata, Wikimedia Commons y USGS (sismos).
+Todos son gratuitos y no necesitan clave: OpenStreetMap (Nominatim y Overpass), Open-Meteo (clima, calidad del aire y elevación Copernicus 90 m de respaldo), AWS Terrain Tiles (elevación SRTM 30 m para el terreno, las pendientes y la vista 3D), MapLibre GL (vista 3D), Esri y OpenTopoMap (mapas), Wikipedia, Wikidata y Wikimedia Commons.
 
 Hace falta internet para consultar datos nuevos. Sin conexión se abre la app con los mapas ya vistos o descargados, las fichas ya abiertas y tus lugares guardados. Si un servicio está saturado, la sección muestra el aviso y un botón **Reintentar**.
 

@@ -39,7 +39,7 @@ const REP_CSS = `
 `;
 document.head.insertAdjacentHTML("beforeend", `<style id="repCss">${REP_CSS}</style>`);
 
-const REP_KEYS = ["info", "weather", "terrain", "ground", "feats", "quakes", "wiki", "photos"];
+const REP_KEYS = ["info", "weather", "terrain", "ground", "feats", "wiki", "photos"];
 const REP = { html: "", name: "", mode: "breve" }; // breve: dos hojas con apreciación; detallado: reporte completo
 async function waitForData(id, maxMs = 30000) {
   const t0 = Date.now();
@@ -101,11 +101,6 @@ function assessRisks() {
     const n = storm || pp >= 80 || gust >= 70 ? 3 : pp >= 50 || gust >= 45 || (vis != null && vis < 2000) ? 2 : 1;
     r.push({ k: "Meteorología (72 h)", n, t: `Prob. de lluvia máx. ${pp} %${storm ? ", tormentas eléctricas previstas" : ""}; ráfagas ${Math.round(gust)} km/h${vis != null ? `; visibilidad ${vis >= 1000 ? (vis / 1000).toFixed(0) + " km" : Math.round(vis) + " m"}` : ""}.` });
   } else r.push({ k: "Meteorología (72 h)", n: 0, t: "Sin datos meteorológicos." });
-  if (!S.errs.quakes) {
-    const strong = S.quakes.filter(q => q.d < 150), max = strong.reduce((a, q) => !a || q.mag > a.mag ? q : a, null);
-    const n = strong.some(q => q.mag >= 5.5) ? 3 : strong.some(q => q.mag >= 4.5) ? 2 : 1;
-    r.push({ k: "Actividad sísmica", n, t: max ? `${strong.length} sismos M2.5+ en 150 km el último año; mayor M${max.mag.toFixed(1)} a ${fmtDist(max.d)}.` : `Sin sismos M2.5+ en 150 km durante el último año (${S.quakes.length} en 300 km).` });
-  } else r.push({ k: "Actividad sísmica", n: 0, t: "Sin datos de USGS." });
   if (g) {
     const n = !g.roads.length ? 3 : g.near.d > 1000 ? 2 : 1;
     r.push({ k: "Acceso terrestre", n, t: g.roads.length ? `Vía más cercana: ${HW_ES[g.near.t.highway] || "vía"} a ${fmtDist(g.near.d)}${g.main === g.near ? "" : g.main ? `; carretera a ${fmtDist(g.main.d)}` : "; sin carretera principal en 3 km"}.` : "Sin vías mapeadas en 3 km." });
@@ -141,7 +136,6 @@ function recommendations(risks) {
   const health = nearestFeat(f => ["hospital", "clinic"].includes(f.tags.amenity));
   const air = nearestFeat(f => f.tags.aeroway);
   rec.push(health ? `Atención médica más cercana: ${health.name || health.type} a ${where(health)}.` : `Sin centros de salud mapeados en ${fmtDist(S.radius)}: definir ruta de evacuación médica${air ? ` (${air.type.toLowerCase()} ${air.name || ""} a ${where(air)})` : ""}.`);
-  if (risks.some(r => r.k === "Actividad sísmica" && r.n >= 2)) rec.push("Zona con actividad sísmica relevante: verificar estado de estructuras antes de usarlas.");
   const gaps = risks.filter(r => r.n === 0).map(r => r.k.toLowerCase());
   if (gaps.length) rec.push(`Completar con reconocimiento en campo: no se obtuvieron datos de ${gaps.join(", ")}.`);
   rec.push("Validar en el terreno: la información proviene de fuentes abiertas y puede estar desactualizada o incompleta.");
@@ -259,10 +253,6 @@ function buildReport() {
   const hydro = S.feats.filter(f => f.cat === "agua");
   const hydroHtml = hydro.length ? `<ul>${hydro.slice(0, 10).map(f => `<li><b>${esc(f.name || f.type)}</b> (${esc(f.type.toLowerCase())}) a ${where(f)}</li>`).join("")}</ul>` : `<p class="note">${S.errs.feats ? "Sin datos de OSM." : `Sin ríos ni cuerpos de agua mapeados en ${fmtDist(S.radius)}.`}</p>`;
 
-  // 8. Sismos
-  const qs = S.quakes.slice().sort((a, b) => b.mag - a.mag).slice(0, 5);
-  const quakesHtml = S.errs.quakes ? sinDato("sismos", S.errs.quakes) : qs.length ? `<table><tr><th>Magnitud</th><th>Lugar</th><th>Fecha</th><th>Prof.</th><th>Distancia</th></tr>${qs.map(q => `<tr><td class="n">M${q.mag.toFixed(1)}</td><td>${esc(placeEs(q.place))}</td><td>${new Date(q.time).toLocaleDateString("es-VE", { dateStyle: "medium" })}</td><td class="n">${Math.round(q.depth)} km</td><td class="n">${fmtDist(q.d)}</td></tr>`).join("")}</table>` : `<p>Sin sismos M2.5+ en 300 km durante el último año.</p>`;
-
   // 9. Referencias
   const refs = S.wiki.slice(0, 6);
   const own = my ? `<div class="box"><h3 style="margin-top:0">Información propia: ${esc(my.name)}</h3>${my.desc ? `<p>${esc(my.desc)}</p>` : ""}${my.notes ? `<p style="white-space:pre-wrap"><b>Notas de reconocimiento:</b> ${esc(my.notes)}</p>` : ""}<p class="note">${my.files.length} archivo(s) adjunto(s) en la app · actualizado ${fmtDate(my.updated)}</p></div>` : "";
@@ -296,10 +286,9 @@ function buildReport() {
     ${sec(5, "Movilidad y accesos")}${mov}<h3>Puentes en el área</h3>${bridgesHtml}
     ${sec(6, "Infraestructura y servicios")}${infra}<h3>Hidrografía</h3>${hydroHtml}
     ${sec(7, "Evaluación de riesgos")}<table><tr><th>Factor</th><th>Nivel</th><th>Fundamento</th></tr>${risks.map(r => `<tr><td>${esc(r.k)}</td><td>${lvlTag(r.n)}</td><td>${esc(r.t)}</td></tr>`).join("")}</table>
-    <h3>Sismos de mayor magnitud (300 km, último año)</h3>${quakesHtml}
     ${sec(8, "Puntos de referencia")}${own}${refs.length ? `<ul>${refs.map(r => `<li><b>${esc(r.title)}</b> a ${fmtDist(r.d)} al ${rumbo(bearing(P, r))}${r.desc ? ` — ${esc(r.desc)}` : ""}</li>`).join("")}</ul>` : `<p class="note">${S.errs.wiki ? "No se pudo consultar Wikipedia." : "Sin lugares documentados en 10 km."}</p>`}
     ${sec(9, "Conclusiones y recomendaciones")}<ol>${rec.map(r => `<li>${esc(r)}</li>`).join("")}</ol>
-    ${sec(10, "Fuentes y limitaciones")}<table>${status("terrain", `Elevación (${t && t.src ? t.src : "SRTM 30 m / Copernicus 90 m"})`)}${status("weather", "Meteorología (Open‑Meteo)")}${status("ground", "Uso del suelo y vías (OpenStreetMap)")}${status("feats", "Elementos del entorno (OpenStreetMap)")}${status("quakes", "Sismos (USGS)")}${status("info", "Información del lugar (Wikipedia / Wikidata)")}${status("wiki", "Lugares cercanos (Wikipedia)")}</table>
+    ${sec(10, "Fuentes y limitaciones")}<table>${status("terrain", `Elevación (${t && t.src ? t.src : "SRTM 30 m / Copernicus 90 m"})`)}${status("weather", "Meteorología (Open‑Meteo)")}${status("ground", "Uso del suelo y vías (OpenStreetMap)")}${status("feats", "Elementos del entorno (OpenStreetMap)")}${status("info", "Información del lugar (Wikipedia / Wikidata)")}${status("wiki", "Lugares cercanos (Wikipedia)")}</table>
     <p class="note">Reporte generado automáticamente a partir de fuentes abiertas el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" })}. Los datos de OpenStreetMap y Wikipedia pueden estar incompletos o desactualizados y el modelo de elevación tiene resolución de 90 m: verificar en el terreno antes de tomar decisiones.</p>
     <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div>
   </article>`;
@@ -409,7 +398,6 @@ function buildBrief() {
     w && row("Luz diurna", `${(w.daily.sunrise[0] || "").slice(11, 16)} – ${(w.daily.sunset[0] || "").slice(11, 16)}`),
     g && row("Acceso", g.roads.length ? `${esc(HW_ES[g.near.t.highway] || "vía")}${g.near.t.name || g.near.t.ref ? ` ${esc(g.near.t.name || g.near.t.ref)}` : ""} a ${fmtDist(g.near.d)} ${rumbo(bearing(P, g.near))}` : "Sin vías en 3 km"),
     row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos" : ["puente", "agua", "estructura", "servicio"].map(c => { const n = S.feats.filter(f => f.cat === c).length; return `${n} ${{ puente: "puente", agua: "agua", estructura: "estructura", servicio: "servicio" }[c]}${n !== 1 && c !== "agua" ? "s" : ""}`; }).join(" · ")),
-    row("Sismos (150 km, 1 año)", S.errs.quakes ? "Sin datos" : `${S.quakes.filter(q => q.d < 150).length}${S.quakes.length ? `; máx. M${Math.max(...S.quakes.map(q => q.mag)).toFixed(1)} en 300 km` : ""}`),
   ].filter(Boolean).join("");
 
   // Hoja 2: datos de apoyo compactos y apreciación
@@ -446,7 +434,7 @@ function buildBrief() {
     <div class="cols2"><div><h3 style="margin-top:0">Pronóstico 72 h</h3>${wx}<h3>Movilidad</h3>${mob}</div><div><h3 style="margin-top:0">Apoyo e hidrografía (${fmtDist(S.radius)})</h3>${sup}</div></div>
     <h2>4. Apreciación</h2>
     <div class="apr">${apr.paras.map(p => `<p>${p}</p>`).join("")}${apr.verdict}</div>
-    <p class="note" style="margin-top:8px">Fuentes: elevación ${esc(t && t.src ? t.src : "SRTM / Copernicus")}, meteorología (Open‑Meteo), OpenStreetMap, Wikipedia/Wikidata, USGS. Generado el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }).replace(/\.$/, "")}.${["terrain", "weather", "ground", "feats", "quakes"].some(k => S.errs[k]) ? " Algunas fuentes no respondieron; ver factores sin dato." : ""}</p>
+    <p class="note" style="margin-top:8px">Fuentes: elevación ${esc(t && t.src ? t.src : "SRTM / Copernicus")}, meteorología (Open‑Meteo), OpenStreetMap y Wikipedia/Wikidata. Generado el ${now.toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }).replace(/\.$/, "")}.${["terrain", "weather", "ground", "feats"].some(k => S.errs[k]) ? " Algunas fuentes no respondieron; ver factores sin dato." : ""}</p>
     <div class="sign"><div>Elaborado por</div><div>Revisado / aprobado por</div></div></div>
   </article>`;
 }

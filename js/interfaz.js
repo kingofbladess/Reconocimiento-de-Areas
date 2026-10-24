@@ -105,7 +105,7 @@ document.addEventListener("pointerdown", e => { if (!toolsEl.contains(e.target))
 const FOLD_KEY = "rv-plegadas";
 const folds = (() => {
   try { const v = JSON.parse(localStorage.getItem(FOLD_KEY)); if (Array.isArray(v)) return new Set(v); } catch (_) {}
-  return new Set(isMobile() ? ["s-cerca", "s-sismos"] : []); // en el teléfono empiezan plegadas las menos usadas
+  return new Set(isMobile() ? ["s-cerca"] : []); // en el teléfono empiezan plegadas las menos usadas
 })();
 const saveFolds = () => { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...folds])); } catch (_) {} };
 function applyFolds() { sheetBody.querySelectorAll("section.blk[id]").forEach(s => s.classList.toggle("fold", folds.has(s.id))); }

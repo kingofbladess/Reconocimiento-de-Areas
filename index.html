@@ -36,6 +36,7 @@
 <script defer src="js/interaccion.js"></script>
 <script defer src="js/visor.js"></script>
 <script defer src="js/herramientas.js"></script>
+<script defer src="js/reconocimiento.js"></script>
 <script defer src="js/sin-conexion.js"></script>
 <script defer src="js/reporte.js"></script>
 <script defer src="js/vista3d.js"></script>
@@ -62,6 +63,7 @@
 </aside>
 
 <div class="tools" id="tools">
+  <button class="tool recon-btn" id="btnRecon" title="Ubicarte por GPS y reconocer el área a tu alrededor"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg><span class="lbl">Reconocer mi área</span></button>
   <button class="tool" id="btnLayers" aria-expanded="false" title="Tipo de mapa"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="lbl">Capas</span></button>
   <div class="seg" id="layers" role="group" aria-label="Tipo de mapa">
     <button data-layer="satelite" aria-pressed="true">Satélite</button>
