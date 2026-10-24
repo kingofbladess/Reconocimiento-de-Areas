@@ -59,7 +59,7 @@ async function selectPoint(lat, lon, opts = {}) {
   const id = ++reqId;
   const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
   NET.staleAt = null;
-  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, recon: !!opts.recon, weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
+  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, recon: !!opts.recon, weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], social: null, terrain: null, ground: null, custom, busy: {}, errs: {} });
   featLayer.clearLayers(); wikiLayer.clearLayers();
   if (pointMarker) pointMarker.setLatLng([lat, lon]);
   else pointMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true, zIndexOffset: 1000 }).addTo(map)
@@ -72,7 +72,7 @@ async function selectPoint(lat, lon, opts = {}) {
   try { history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`); } catch (_) {}
   renderSheet();
   if (opts.form) renderForm(null);
-  loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadSat(id); loadWiki(id); loadFeatures(id); loadGround(id);
+  loadWeather(id); loadAir(id); loadTerrain(id); loadPhotos(id); loadSat(id); loadWiki(id); loadFeatures(id); loadGround(id); loadSocial(id);
   if (!S.place) await reverse(id);
   if (id !== reqId) return;
   if (!areaShape && S.place && S.place.address && S.place.address.country_code && !AREA_CC.includes(S.place.address.country_code)) {
