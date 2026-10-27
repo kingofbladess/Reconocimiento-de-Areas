@@ -22,17 +22,18 @@ function renderSheet() {
     <section class="blk" id="s-terreno"></section>
     <section class="blk" id="s-clima"></section>
     <section class="blk" id="s-fotos"></section>
+    <section class="blk" id="s-redes"></section>
     <section class="blk" id="s-cerca"></section>
     <section class="blk" id="s-entorno"></section>`;
   sheetBody.scrollTop = 0;
   applyFolds();
-  renderHead(); renderNav(); renderFiles(); renderCoords(); renderTerrain(); renderWeather(); renderPhotos(); renderWiki(); renderFeats();
+  renderHead(); renderNav(); renderFiles(); renderCoords(); renderTerrain(); renderWeather(); renderPhotos(); renderSocial(); renderWiki(); renderFeats();
 }
 function renderNav() {
   const n = v => v ? `<span class="n">${v}</span>` : "";
   const el = $("#nav"); if (!el) return;
   el.innerHTML = (S.custom ? `<a href="#s-archivos">Mis archivos${n(S.custom.files.length)}</a>` : "")
-    + `<a href="#s-coords">Coordenadas</a><a href="#s-terreno">Terreno</a><a href="#s-clima">Clima</a><a href="#s-fotos">Fotos${n(S.photos.length)}</a><a href="#s-cerca">Cerca${n(S.wiki.length)}</a><a href="#s-entorno">Entorno${n(S.feats.length)}</a>`;
+    + `<a href="#s-coords">Coordenadas</a><a href="#s-terreno">Terreno</a><a href="#s-clima">Clima</a><a href="#s-fotos">Fotos${n(S.photos.length)}</a><a href="#s-redes">Redes${n(socialCount())}</a><a href="#s-cerca">Cerca${n(S.wiki.length)}</a><a href="#s-entorno">Entorno${n(S.feats.length)}</a>`;
 }
 function renderHead() {
   scheduleRecon();
@@ -68,6 +69,7 @@ function renderHead() {
     <div class="actions">${acts}<button class="btn" data-act="share">Copiar enlace</button></div>
     ${S.recon ? `<section class="blk recon" id="s-recon"></section>` : ""}
     <section class="blk" id="s-resumen"><h3>${my ? "Mi lugar" : "Sobre este lugar"}</h3>${about}</section>`;
+  renderSocial(); // el nombre del lugar y sus cuentas pueden haber cambiado
 }
 function fmtOffset(s) { const sg = s < 0 ? "-" : "+"; s = Math.abs(s); return `${sg}${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}`; }
 function renderCoords() {

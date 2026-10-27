@@ -2,7 +2,7 @@
 "use strict";
 
 // ---------- Interacción con la ficha ----------
-const RETRY = { weather: id => { loadWeather(id); loadAir(id); }, photos: loadPhotos, wiki: loadWiki, feats: loadFeatures, info: loadInfo, terrain: loadTerrain, ground: loadGround };
+const RETRY = { weather: id => { loadWeather(id); loadAir(id); }, photos: loadPhotos, wiki: loadWiki, feats: loadFeatures, info: loadInfo, terrain: loadTerrain, ground: loadGround, social: loadSocial };
 function closeSheet() {
   S.point = null; S.custom = null; if (pointMarker) { map.removeLayer(pointMarker); pointMarker = null; } if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
   featLayer.clearLayers(); wikiLayer.clearLayers(); reqId++; renderEmpty();
@@ -54,12 +54,14 @@ sheetBody.addEventListener("click", async e => {
   if (chip) { const k = chip.dataset.cat; S.hiddenCats.has(k) ? S.hiddenCats.delete(k) : S.hiddenCats.add(k); drawFeatures(); renderFeats(); return; }
   const ft = e.target.closest("[data-feat]");
   if (ft) { const f = S.feats.find(x => x.id === ft.dataset.feat); if (f) flyOpen([f.lat, f.lon], f.marker); return; }
+  const so = e.target.closest("[data-soc]");
+  if (so) { const it = S.socialShown[+so.dataset.soc]; flyOpen([it.lat, it.lon], null); setTimeout(() => L.popup().setLatLng([it.lat, it.lon]).setContent(`<b>${esc(it.name || it.type)}</b><br>${esc(it.type)}<br>${it.accs.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener nofollow">${esc(NETS[a.net].label)}</a>`).join(" · ")}`).openOn(map), 650); return; }
   const wk = e.target.closest("[data-wiki]");
   if (wk) { const w = S.wiki[+wk.dataset.wiki]; let m = null; wikiLayer.eachLayer(l => { const p = l.getLatLng(); if (p.lat === w.lat && p.lng === w.lon) m = l; }); flyOpen([w.lat, w.lon], m, 16); return; }
 });
 sheetBody.addEventListener("keydown", e => { const d = e.target.closest(".drop"); if (d && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); d.click(); } });
 sheetBody.addEventListener("change", e => {
-  if (e.target.id === "radius") { S.radius = +e.target.value; drawRadius(); loadFeatures(reqId); loadPhotos(reqId); loadTerrain(reqId); map.fitBounds(radiusCircle.getBounds(), { padding: [30, 30] }); }
+  if (e.target.id === "radius") { S.radius = +e.target.value; drawRadius(); loadFeatures(reqId); loadPhotos(reqId); loadTerrain(reqId); loadSocial(reqId); map.fitBounds(radiusCircle.getBounds(), { padding: [30, 30] }); }
   if (e.target.id === "fileIn" || e.target.id === "fileHere") { handleFiles(e.target.id === "fileIn" ? "drop" : "here", [...e.target.files]); e.target.value = ""; }
 });
 sheetBody.addEventListener("submit", e => { if (e.target.id === "placeForm") { e.preventDefault(); savePlace(e.target); } });

@@ -2,7 +2,7 @@
 
 Mapa para reconocer cualquier punto de Venezuela: terreno, clima, fotos, historia, entorno (puentes, ríos, estructuras, naturaleza) y tus propios lugares con fotos y PDF.
 
-Versión 3.8 · octubre 2026
+Versión 3.9 · octubre 2026
 
 ## Cómo abrirla
 
@@ -42,6 +42,7 @@ En el teléfono abre ese enlace y elige **Instalar app** (Android, Chrome) o **C
 - **Vista 3D:** botón **3D** del mapa o de la ficha (o tecla `3`). Muestra el relieve real con imagen satelital, relieve topográfico o mapa; se puede inclinar (Cenital, Oblicua, Rasante), girar, exagerar la altura del relieve (×1 a ×4) y hacer que la cámara gire sola alrededor del punto. Incluye el punto elegido, el radio, el trazo de medición y los elementos del entorno. Capas: **Sombras**, **Curvas** de nivel con su cota (calculadas del modelo SRTM), **Nombres** nítidos en español (ciudades, picos con altura, ríos y vías) y **Edificios** en volumen. Si hay un trazo de medición, **Recorrer trazo** hace volar la cámara a lo largo de él. Clic derecho o Ctrl + arrastrar gira e inclina; en el teléfono, dos dedos.
 - **Clima:** condiciones actuales, próximas 24 horas, pronóstico de 7 días y calidad del aire.
 - **Fotos** geolocalizadas de Wikimedia Commons: primero las de este año (marcadas con el año) y luego las más recientes, cada grupo ordenado por cercanía al punto; también se pueden ordenar solo por distancia. Se indica la fecha de captura y el detalle (en metros) de la imagen satelital del punto. Artículos de Wikipedia cercanos.
+- **Redes sociales**: cuentas oficiales del lugar (Facebook, Instagram, TikTok, X, YouTube, Threads, Telegram, WhatsApp, LinkedIn, Flickr, Mastodon y sitio web) según Wikidata y OpenStreetMap; cuentas de los comercios, posadas e instituciones cercanas; y botones que abren la búsqueda del lugar en cada red (hashtag de Instagram, TikTok, YouTube recientes, Facebook, X, Threads, Reddit, fotos de Flickr en el mapa y Google en todas las redes del último año). Las redes no permiten leer publicaciones sin iniciar sesión, por eso se abren en su propia página.
 - **Entorno:** puentes, ríos, estructuras, naturaleza y servicios en un radio de 250 m a 5 km.
 - **Herramientas:** medir distancias con perfil del terreno que se actualiza solo (los puntos se arrastran para corregir el trazo y un toque los quita), capa **Pendientes** que colorea las laderas según su inclinación, capas Satélite, Mapa, Relieve y Sombras, y **Mi ubicación**.
 - **Manejo del mapa:** zoom continuo con la rueda, doble toque para acercar sin abrir la ficha, altitud bajo el cursor, y menú con clic derecho o manteniendo presionado (ver ficha, ver en 3D, medir desde ahí, copiar coordenadas). Atajos: `3` vista 3D, `M` medir, `P` pendientes, `/` buscar, `Esc` cerrar.
@@ -74,6 +75,7 @@ reconocimiento-venezuela/
 │   ├── busqueda.js         Búsqueda y selección de un punto
 │   ├── fuentes.js          Wikipedia, Commons, clima y aire
 │   ├── entorno.js          Elementos cercanos de OpenStreetMap
+│   ├── redes.js            Redes sociales del lugar y de los alrededores
 │   ├── terreno.js          Relieve, pendientes, perfiles, suelo y accesos
 │   ├── mis-lugares.js      Lugares propios con fotos y PDF
 │   ├── ficha.js            Dibujo de la ficha lateral

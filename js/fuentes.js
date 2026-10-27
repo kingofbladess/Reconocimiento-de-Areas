@@ -25,7 +25,8 @@ async function loadInfo(id) {
   }
   if (id !== reqId) return;
   S.info = info; S.errs.info = !info && lastErr ? lastErr.message : null;
-  S.busy.info = false; renderHead();
+  S.busy.info = false; renderHead(); renderNav();
+  loadPlaceSocial(id);
 }
 async function fromWikidata(qid) {
   const d = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&ids=${qid}&props=claims|sitelinks|descriptions|labels&languages=es|en&sitefilter=eswiki|enwiki`);
@@ -52,7 +53,7 @@ async function fromWikidata(qid) {
     url: summary ? summary.url : `https://www.wikidata.org/wiki/${qid}`,
     image: img ? commonsFile(img, 900) : summary && summary.image,
     imageTitle: img ? "File:" + img : null,
-    facts, web, source: title ? (lang === "en" ? "Wikipedia en inglés (traducida) y Wikidata" : "Wikipedia y Wikidata") : "Wikidata",
+    qid, social: socialFromClaims(cl), facts, web, source: title ? (lang === "en" ? "Wikipedia en inglés (traducida) y Wikidata" : "Wikipedia y Wikidata") : "Wikidata",
   };
 }
 // La búsqueda por nombre puede traer un homónimo de otro país (p. ej. "El Dorado" → un distrito de Perú):
@@ -64,7 +65,7 @@ async function fromWikiSearch(q, lang = "es") {
     const s = await wikiSummary(hit.title, lang);
     if (!s || !s.extract) continue;
     if (s.coords ? dist(S.point, s.coords) > 80000 : !near.test(`${s.description} ${s.extract}`)) continue;
-    return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, facts: [], source: lang === "en" ? "Wikipedia en inglés, traducida (zona)" : "Wikipedia (zona)" };
+    return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, qid: s.qid, facts: [], source: lang === "en" ? "Wikipedia en inglés, traducida (zona)" : "Wikipedia (zona)" };
   }
   return null;
 }
@@ -73,7 +74,7 @@ async function wikiSummary(title, lang = "es") {
   const s = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
   const [description, extract] = lang === "en" ? await Promise.all([toEs(s.description || ""), toEs(s.extract || "")]) : [s.description || "", s.extract || ""];
   return { title: lang === "en" ? esName(s.title) : s.title, description, extract, url: s.content_urls && s.content_urls.desktop.page, image: s.originalimage ? (s.thumbnail || s.originalimage).source.replace(/\/\d+px-/, "/900px-") : null,
-    coords: s.coordinates && s.coordinates.lat != null ? { lat: s.coordinates.lat, lon: s.coordinates.lon } : null };
+    qid: s.wikibase_item || null, coords: s.coordinates && s.coordinates.lat != null ? { lat: s.coordinates.lat, lon: s.coordinates.lon } : null };
 }
 const commonsFile = (name, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name.replace(/^File:/, ""))}?width=${w}`;
 

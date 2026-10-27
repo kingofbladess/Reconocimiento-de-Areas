@@ -32,6 +32,6 @@ const FEATURED = [
 const S = {
   point: null, place: null, search: null,
   radius: 1000, hiddenCats: new Set(),
-  weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], terrain: null, ground: null,
+  weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], social: null, terrain: null, ground: null,
   custom: null, busy: {}, errs: {},
 };

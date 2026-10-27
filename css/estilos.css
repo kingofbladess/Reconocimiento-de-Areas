@@ -167,6 +167,23 @@ b.yr { font: 600 11px var(--f-mono); color: #fff; background: #1f9d55; border-ra
 .wcard p { margin: 2px 0 0; font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .wcard .d { font: 12px var(--f-mono); color: var(--accent); }
 
+/* Redes sociales */
+.sic { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--n); color: #fff; font: 700 9px/1 var(--f-body); font-style: normal; letter-spacing: -.02em; }
+.saccs { display: flex; flex-wrap: wrap; gap: 5px; }
+.sacc { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 8px 2px 2px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--ink); text-decoration: none; background: var(--sheet); }
+.sacc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
+.sacc:hover { background: var(--soft); }
+.ssearch { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 5px; }
+.ssearch a { display: flex; align-items: center; gap: 7px; padding: 5px 7px; border-radius: 8px; background: var(--soft); color: var(--ink); text-decoration: none; min-width: 0; }
+.ssearch a:hover { outline: 1px solid var(--line); }
+.ssearch span { min-width: 0; line-height: 1.15; }
+.ssearch b { display: block; font-size: 12px; font-weight: 600; }
+.ssearch small { display: block; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow { padding: 7px 0; border-top: 1px solid var(--line); }
+.sname { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 0 0 5px; cursor: pointer; color: var(--ink); }
+.sname b { display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.sname span { font-size: 12px; color: var(--muted); }
+
 .ctrl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
 .ctrl-row select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--soft); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }

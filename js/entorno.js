@@ -134,5 +134,6 @@ function extraInfo(t) {
   if (t.highway && t.bridge) rows.push(`Vía: ${esc(t.highway)}`); if (t.operator) rows.push(`Operador: ${esc(t.operator)}`);
   if (t.opening_hours) rows.push(`Horario: ${esc(t.opening_hours)}`); if (t.phone) rows.push(`Tel.: ${esc(t.phone)}`);
   if (t.wikipedia) { const [lang, title] = t.wikipedia.split(":"); if (title) rows.push(`<a href="https://${esc(lang)}.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" rel="noopener">Wikipedia</a>`); }
+  const soc = socialFromTags(t); if (soc.length) rows.push(soc.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener nofollow">${esc(NETS[a.net].label)}</a>`).join(" · "));
   return rows.length ? "<br>" + rows.join("<br>") : "";
 }
