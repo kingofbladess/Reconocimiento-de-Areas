@@ -25,8 +25,14 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
 const nameEs = ["coalesce", ["get", "name:es"], ["get", "name"]];
 const HALO = { "text-color": "#fff", "text-halo-color": "rgba(10,17,29,.85)", "text-halo-width": 1.4 };
 const NAME_LAYERS = ["n-lugares", "n-ciudades", "n-picos", "n-rios", "n-vias", "curvas-cota"];
-function style3D() {
-  const dem = { type: "raster-dem", tiles: [DEM_URL], encoding: "terrarium", tileSize: 256, maxzoom: 15 };
+// Exageración efectiva: la del control en vista amplia y relieve real (×1) a nivel de calle, donde exagerar deforma la imagen
+const exagFor = z => { const v = +$("#v3dExag").value, f = Math.max(0, Math.min(1, (15.5 - z) / 2.5)); return Math.round((1 + (v - 1) * f) * 20) / 20; };
+let exagNow = 0;
+function applyExag() { if (!gl || !gl.isStyleLoaded()) return; const e = exagFor(gl.getZoom()); if (e !== exagNow) { exagNow = e; gl.setTerrain({ source: "dem", exaggeration: e }); } }
+function style3D(zoom0) {
+  // El SRTM de 30 m no es un modelo del suelo urbano: en ciudades trae edificios y árboles como lomas falsas.
+  // Se usa hasta el nivel 12 (MapLibre suaviza al acercar) y así calles y plazas quedan planas bajo los edificios en 3D.
+  const dem = { type: "raster-dem", tiles: [DEM_URL], encoding: "terrarium", tileSize: 256, maxzoom: 12 };
   const sources = {
     satelite: { type: "raster", tiles: [ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}"], tileSize: 256, maxzoom: 19, attribution: "Imágenes &copy; Esri, Maxar" },
     relieve: { type: "raster", tiles: ["a", "b", "c"].map(s => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`), tileSize: 256, maxzoom: 17, attribution: "&copy; OpenTopoMap (CC-BY-SA)" },
@@ -39,7 +45,7 @@ function style3D() {
     { id: "satelite", type: "raster", source: "satelite", paint: { "raster-contrast": 0.08, "raster-saturation": 0.1 } },
     { id: "relieve", type: "raster", source: "relieve", layout: { visibility: "none" } },
     { id: "mapa", type: "raster", source: "mapa", layout: { visibility: "none" } },
-    { id: "sombras", type: "hillshade", source: "demSombra", paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#0b1424", "hillshade-highlight-color": "rgba(255,244,214,.35)", "hillshade-accent-color": "#2b3a52", "hillshade-illumination-direction": 315 } },
+    { id: "sombras", type: "hillshade", source: "demSombra", paint: { "hillshade-exaggeration": ["interpolate", ["linear"], ["zoom"], 12, 0.35, 16, 0.08], "hillshade-shadow-color": "#0b1424", "hillshade-highlight-color": "rgba(255,244,214,.35)", "hillshade-accent-color": "#2b3a52", "hillshade-illumination-direction": 315 } },
   ];
   if (window.mlcontour) {
     // curvas de nivel calculadas del mismo modelo SRTM; la equidistancia se ajusta al acercar
@@ -71,7 +77,7 @@ function style3D() {
       layout: { "text-field": nameEs, "text-font": ["Noto Sans Bold"], "text-size": ["match", ["get", "class"], "city", 16, 13.5] }, paint: HALO });
   return {
     version: 8, glyphs: OFM + "/fonts/{fontstack}/{range}.pbf", sources, layers,
-    terrain: { source: "dem", exaggeration: 1.5 },
+    terrain: { source: "dem", exaggeration: exagFor(zoom0) },
     sky: { "sky-color": "#2f6fd0", "horizon-color": "#cfe0f4", "fog-color": "#dfe8f3", "sky-horizon-blend": 0.5, "horizon-fog-blend": 0.55, "fog-ground-blend": 0.85, "atmosphere-blend": 0.8 },
   };
 }
@@ -143,13 +149,14 @@ function pointPopup(ll) {
 async function create3D(center, zoom) {
   await loadMapLibre();
   gl = new maplibregl.Map({
-    container: "v3dMap", style: style3D(), center, zoom, pitch: 0, bearing: 0, maxPitch: 85, minZoom: 4.5,
+    container: "v3dMap", style: style3D(zoom), center, zoom, pitch: 0, bearing: 0, maxPitch: 85, minZoom: 4.5, maxZoom: 17.5,
     maxBounds: [[AREA_BBOX.w - 8, AREA_BBOX.s - 6], [AREA_BBOX.e + 8, AREA_BBOX.n + 6]],
     attributionControl: { compact: true }, fadeDuration: 150, cooperativeGestures: false,
   });
   gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true }), "top-right");
   gl.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
-  gl.on("load", () => { addOverlays(); sync3D(); });
+  gl.on("load", () => { addOverlays(); sync3D(); exagNow = exagFor(gl.getZoom()); });
+  gl.on("zoomend", applyExag);
   gl.on("error", e => { if (e && e.error && /webgl/i.test(String(e.error.message))) toast("Este equipo no puede mostrar la vista 3D (WebGL desactivado)"); });
   gl.on("mousemove", e => {
     const c = `${e.lngLat.lat.toFixed(5)}, ${e.lngLat.lng.toFixed(5)}`, el = $("#v3dRead"); el.textContent = c;
@@ -168,7 +175,7 @@ async function create3D(center, zoom) {
 async function open3D(at) {
   const P = at || S.point, c = map.getCenter();
   const center = P ? [P.lon, P.lat] : [c.lng, c.lat];
-  const zoom = Math.max(P ? 13.5 : 5, map.getZoom() - 1); // las teselas de MapLibre son de 512 px: un nivel menos equivale a la misma escala
+  const zoom = Math.min(16, Math.max(P ? 13.5 : 5, map.getZoom() - 1)); // las teselas de MapLibre son de 512 px: un nivel menos equivale a la misma escala
   $("#v3d").hidden = false; document.body.classList.add("in3d"); closeCtx();
   $("#v3dLoad").hidden = !!gl;
   try {
@@ -188,12 +195,13 @@ function close3D() {
   stopOrbit();
   if (gl) { const c = gl.getCenter(); map.setView([c.lat, c.lng], Math.min(18, gl.getZoom() + 1), { animate: false }); }
   $("#v3d").hidden = true; document.body.classList.remove("in3d");
+  requestAnimationFrame(fitMapSize);
 }
 $("#v3dClose").addEventListener("click", close3D);
 $("#v3dBase").addEventListener("click", e => { const b = e.target.closest("button[data-b]"); if (b && gl) setBase3D(b.dataset.b); });
 $("#v3dExag").addEventListener("input", e => {
   const v = +e.target.value; $("#v3dExagVal").textContent = `×${v.toLocaleString("es-VE")}`;
-  if (gl && gl.isStyleLoaded()) gl.setTerrain({ source: "dem", exaggeration: v });
+  applyExag();
 });
 const LAYER_SETS = { sombras: ["sombras"], curvas: ["curvas", "curvas-cota"], nombres: NAME_LAYERS.filter(id => id !== "curvas-cota"), edificios: ["edificios"] };
 $("#v3dLayers").addEventListener("click", e => {

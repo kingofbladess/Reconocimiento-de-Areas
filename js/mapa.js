@@ -8,6 +8,13 @@ const map = L.map("map", { zoomControl: false, worldCopyJump: false, minZoom: 5,
   zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 110, wheelDebounceTime: 25, bounceAtZoomLimits: false,
   inertiaDeceleration: 2200, easeLinearity: 0.2, doubleClickZoom: true,
   maxBounds: [[AREA_BBOX.s - 3, AREA_BBOX.w - 4], [AREA_BBOX.n + 4, AREA_BBOX.e + 4]] });
+// Si el mapa no se entera de que su contenedor cambió de tamaño (girar el teléfono, maximizar la ventana, teclado,
+// volver de otra app o de la vista 3D) solo pinta el rectángulo del tamaño viejo y el resto queda vacío: se vigila siempre.
+function fitMapSize() { const c = map.getContainer(), s = map.getSize(); if (c.clientWidth && (c.clientWidth !== s.x || c.clientHeight !== s.y)) map.invalidateSize({ pan: false }); }
+if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(fitMapSize)).observe(map.getContainer());
+["resize", "orientationchange", "pageshow", "focus"].forEach(t => window.addEventListener(t, () => setTimeout(fitMapSize, 120)));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(fitMapSize, 120); });
+if (window.visualViewport) visualViewport.addEventListener("resize", () => setTimeout(fitMapSize, 120));
 L.control.zoom({ position: "topright", zoomInTitle: "Acercar (+)", zoomOutTitle: "Alejar (−)" }).addTo(map);
 // Botones bajo el zoom: vista 3D, mi ubicación y norte/país
 const MapButtons = L.Control.extend({
