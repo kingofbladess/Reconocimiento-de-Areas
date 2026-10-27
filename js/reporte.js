@@ -50,9 +50,59 @@ async function openReport() {
   const id = reqId;
   $("#report").hidden = false;
   $("#reportBody").innerHTML = `<div class="loading">Reuniendo la información del área… (terreno, clima, accesos, infraestructura y riesgos)</div>`;
-  await waitForData(id);
+  // Si los alrededores de OSM fallaron (límite de Overpass), se reintenta una vez mientras se arma el mapa base
+  const retry = ["feats", "ground"].filter(k => S.errs[k] && !S.busy[k]);
+  retry.forEach(k => RETRY[k](id));
+  await Promise.all([waitForData(id), sketchBase(id)]);
   if (id !== reqId || $("#report").hidden) return;
   renderReport();
+  if (retry.some(k => S.busy[k])) { // el reintento tardó más: se actualiza el reporte cuando llegue
+    await waitForData(id, 90000);
+    if (id === reqId && !$("#report").hidden) { const sc = $("#report .report-scroll"), top = sc.scrollTop; renderReport(); sc.scrollTop = top; }
+  }
+}
+
+// Mapa base del croquis: teselas de OpenStreetMap (o Esri si fallan) pintadas en un lienzo y guardadas como imagen,
+// así el croquis muestra calles, ríos y edificios aunque Overpass no responda, y el reporte descargado las conserva.
+const SKETCH_W = 440, SKETCH_PAD = 18;
+const SKETCH_TILES = [
+  ["https://tile.openstreetmap.org/{z}/{x}/{y}.png", 19, "© OpenStreetMap"],
+  ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", 19, "© Esri, OpenStreetMap"],
+  ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 19, "Imágenes © Esri, Maxar"],
+];
+function tileImg(url, ms = 8000) {
+  return new Promise((ok, no) => {
+    const img = new Image(), t = setTimeout(() => { img.src = ""; no(new Error("tiempo agotado")); }, ms);
+    img.crossOrigin = "anonymous";
+    img.onload = () => { clearTimeout(t); ok(img); }; img.onerror = () => { clearTimeout(t); no(new Error("sin tesela")); };
+    img.src = url;
+  });
+}
+async function sketchBase(id) {
+  const P = S.point, R = S.radius, key = `${P.lat},${P.lon},${R}`;
+  if (REP.base && REP.base.key === key) return;
+  REP.base = null;
+  const px = 2 * SKETCH_W, mPerPx = R / (SKETCH_W / 2 - SKETCH_PAD) / 2; // lienzo al doble para que se vea nítido al imprimir
+  const cosL = Math.cos(P.lat * rad), wx = lon => (lon + 180) / 360, wy = lat => { const s = Math.sin(lat * rad); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); };
+  for (const [tpl, maxZ, attr] of SKETCH_TILES) {
+    const z = Math.max(3, Math.min(maxZ, Math.round(Math.log2(156543.03 * cosL / mPerPx)))), n = 2 ** z;
+    const scale = 156543.03 * cosL / n / mPerPx; // píxeles del lienzo por píxel de tesela
+    const cx = wx(P.lon) * n * 256, cy = wy(P.lat) * n * 256, half = px / 2 / scale;
+    const x0 = Math.floor((cx - half) / 256), x1 = Math.floor((cx + half) / 256), y0 = Math.floor((cy - half) / 256), y1 = Math.floor((cy + half) / 256);
+    const jobs = [];
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) if (y >= 0 && y < n)
+      jobs.push(tileImg(tpl.replace("{z}", z).replace("{x}", ((x % n) + n) % n).replace("{y}", y)).then(img => ({ img, x, y }), () => null));
+    const got = (await Promise.all(jobs)).filter(Boolean);
+    if (id !== reqId) return;
+    if (got.length < jobs.length * 0.6) continue; // demasiados huecos: se prueba el siguiente proveedor
+    try {
+      const cv = document.createElement("canvas"); cv.width = cv.height = px;
+      const g = cv.getContext("2d"); g.fillStyle = "#f3f6fb"; g.fillRect(0, 0, px, px);
+      for (const { img, x, y } of got) g.drawImage(img, (x * 256 - cx) * scale + px / 2, (y * 256 - cy) * scale + px / 2, 256 * scale + 0.5, 256 * scale + 0.5);
+      REP.base = { key, url: cv.toDataURL("image/jpeg", 0.82), attr };
+      return;
+    } catch (_) { /* lienzo "contaminado" (tesela sin CORS): se prueba el siguiente */ }
+  }
 }
 function renderReport() {
   REP.html = REP.mode === "breve" ? buildBrief() : buildReport();
@@ -157,17 +207,24 @@ function sketchSVG() {
     const [x, y] = xy(f); dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6" fill="${col}" stroke="#fff" stroke-width="1.2"/>`;
   }
   const bar = R / 2, bx = 16, by = W - 16;
+  // Fondo: mapa de teselas; sin conexión, el relieve del área; si tampoco hay, papel en blanco
+  const b = REP.base && REP.base.key === `${P.lat},${P.lon},${R}` ? REP.base : null, t = S.terrain, r0 = C - 18;
+  let bg = "", attr = "";
+  if (b) { bg = `<image href="${b.url}" x="0" y="0" width="${W}" height="${W}" preserveAspectRatio="none"/>`; attr = b.attr; }
+  else if (t) { const s = 2 * t.R * k; bg = terrainSVG(t).replace(/<circle[^>]*\/>|<text[\s\S]*?<\/text>/g, "").replace("<svg ", `<svg x="${(C - s / 2).toFixed(1)}" y="${(C - s / 2).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" `); attr = "Relieve (sin mapa base)"; }
+  const fade = bg ? `<path d="M0,0H${W}V${W}H0Z M${C - r0},${C}a${r0},${r0} 0 1,0 ${2 * r0},0a${r0},${r0} 0 1,0 ${-2 * r0},0Z" fill="#fff" fill-opacity=".55" fill-rule="evenodd"/>` : "";
   return `<svg class="sketch" viewBox="0 0 ${W} ${W}" role="img" aria-label="Croquis del área">
-    <defs><clipPath id="repClip"><circle cx="${C}" cy="${C}" r="${C - 18}"/></clipPath></defs>
-    <rect width="${W}" height="${W}" fill="#f3f6fb"/>
-    <circle cx="${C}" cy="${C}" r="${C - 18}" fill="#fff" stroke="#0f1c2e" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <circle cx="${C}" cy="${C}" r="${(C - 18) / 2}" fill="none" stroke="#cdd6e3" stroke-dasharray="2 4"/>
+    <defs><clipPath id="repClip"><circle cx="${C}" cy="${C}" r="${r0}"/></clipPath></defs>
+    <rect width="${W}" height="${W}" fill="#f3f6fb"/>${bg ? `<g>${bg}</g>${fade}` : `<circle cx="${C}" cy="${C}" r="${r0}" fill="#fff"/>`}
+    <circle cx="${C}" cy="${C}" r="${r0}" fill="none" stroke="#0f1c2e" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <circle cx="${C}" cy="${C}" r="${r0 / 2}" fill="none" stroke="${bg ? "#0f1c2e" : "#cdd6e3"}" stroke-opacity="${bg ? .45 : 1}" stroke-dasharray="2 4"/>
     <g clip-path="url(#repClip)">${roads}${lines}${dots}</g>
     <circle cx="${C}" cy="${C}" r="7" fill="#d99a06" stroke="#0f1c2e" stroke-width="2"/>
     <path d="M${W - 26},14 l7,18 l-7,-5 l-7,5z" fill="#0f1c2e"/><text x="${W - 26}" y="46" font-size="12" font-weight="700" text-anchor="middle" fill="#0f1c2e">N</text>
     <line x1="${bx}" x2="${bx + bar * k}" y1="${by}" y2="${by}" stroke="#0f1c2e" stroke-width="3"/>
-    <text x="${bx}" y="${by - 6}" font-size="11" fill="#0f1c2e">${fmtDist(bar)}</text>
-    <text x="${C + (C - 18) / 2 + 3}" y="${C - 3}" font-size="10" fill="#8a98ab">${fmtDist(R / 2)}</text></svg>`;
+    <text x="${bx}" y="${by - 6}" font-size="11" fill="#0f1c2e" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtDist(bar)}</text>
+    <text x="${C + (C - 18) / 2 + 3}" y="${C - 3}" font-size="10" fill="${bg ? "#0f1c2e" : "#8a98ab"}" stroke="#fff" stroke-width="${bg ? 2.5 : 0}" paint-order="stroke">${fmtDist(R / 2)}</text>
+    ${attr ? `<text x="${W - 6}" y="${W - 5}" font-size="9" text-anchor="end" fill="#5b6b80" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(attr)}</text>` : ""}</svg>`;
 }
 
 // ---------- Documento ----------
@@ -397,7 +454,7 @@ function buildBrief() {
     w && row("Lluvia 72 h", `${Math.max(...w.daily.precipitation_probability_max.slice(0, 3).map(v => v || 0))} % · ${w.daily.precipitation_sum.slice(0, 3).reduce((a, v) => a + (v || 0), 0).toFixed(0)} mm`),
     w && row("Luz diurna", `${(w.daily.sunrise[0] || "").slice(11, 16)} – ${(w.daily.sunset[0] || "").slice(11, 16)}`),
     g && row("Acceso", g.roads.length ? `${esc(HW_ES[g.near.t.highway] || "vía")}${g.near.t.name || g.near.t.ref ? ` ${esc(g.near.t.name || g.near.t.ref)}` : ""} a ${fmtDist(g.near.d)} ${rumbo(bearing(P, g.near))}` : "Sin vías en 3 km"),
-    row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos" : ["puente", "agua", "estructura", "servicio"].map(c => { const n = S.feats.filter(f => f.cat === c).length; return `${n} ${{ puente: "puente", agua: "agua", estructura: "estructura", servicio: "servicio" }[c]}${n !== 1 && c !== "agua" ? "s" : ""}`; }).join(" · ")),
+    row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos de OSM (servidor saturado); el croquis muestra el mapa base" : ["puente", "agua", "estructura", "servicio"].map(c => { const n = S.feats.filter(f => f.cat === c).length; return `${n} ${{ puente: "puente", agua: "agua", estructura: "estructura", servicio: "servicio" }[c]}${n !== 1 && c !== "agua" ? "s" : ""}`; }).join(" · ")),
   ].filter(Boolean).join("");
 
   // Hoja 2: datos de apoyo compactos y apreciación
