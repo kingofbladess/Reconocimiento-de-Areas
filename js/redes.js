@@ -71,7 +71,7 @@ function placeAccounts() {
 // OpenStreetMap (comercios, posadas, instituciones con sus redes) y Wikidata (municipios, parques, museos, iglesias…)
 const SOCIAL_KM = () => Math.min(10, Math.max(2, S.radius * 2 / 1000));
 function socialOverpass(lat, lon, r) {
-  return `[out:json][timeout:25];nwr(around:${r},${lat},${lon})[~"${SOCIAL_KEY_RE}"~"."];out tags center 150;`;
+  return `[out:json][timeout:25];nwr(${bboxAround(lat, lon, r)})[~"${SOCIAL_KEY_RE}"~"."];out tags center 150;`;
 }
 function socialSparql(lat, lon, km) {
   const props = Object.keys(WD_NET).filter(p => p !== "P856").map(p => `(wdt:${p})`).join(" ");

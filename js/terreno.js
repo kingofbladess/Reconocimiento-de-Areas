@@ -53,13 +53,13 @@ async function loadTerrain(id) {
   if (id === reqId) { S.busy.terrain = false; renderTerrain(); renderCoords(); }
 }
 function groundQuery(lat, lon) {
-  return `[out:json][timeout:40];
+  return `[out:json][timeout:25];
 is_in(${lat},${lon})->.a;
 area.a[~"^(landuse|natural|leisure|boundary|water|place|military|aeroway|amenity|man_made|landcover|building)$"~"."]->.b;
 .b out tags;
 (
-way(around:3000,${lat},${lon})["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|track)$"];
-way(around:400,${lat},${lon})["highway"];
+way(${bboxAround(lat, lon, 3000)})["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|track)$"];
+way(${bboxAround(lat, lon, 400)})["highway"];
 );
 out tags geom(${bboxAround(lat, lon, 3000)}) 800;`;
 }

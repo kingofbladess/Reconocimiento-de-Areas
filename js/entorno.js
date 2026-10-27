@@ -24,9 +24,11 @@ function bboxAround(lat, lon, r) {
 // extras (túneles, lagunas con water=*, poblados, vías férreas, edificaciones con uso…). En v3.10.0 iba todo en una
 // sola consulta pesada que los servidores rechazaban o cortaban por tiempo, y el Entorno no salía en ningún lado.
 const FEAT_MAX = 1000, EXTRA_MAX = 800, BLD_MAX = 500; // tope de elementos por bloque; si se alcanza se avisa en la ficha
+// Se busca en el cuadro que rodea el círculo ([bbox:…]) y la distancia se filtra después en el navegador: para Overpass
+// eso es varias veces más rápido que around, que calcula la distancia de cada vía y con servidores cargados pasaba del minuto.
 function overpassQuery(lat, lon, r) {
-  const A = `(around:${r},${lat},${lon})`;
-  return `[out:json][timeout:60][maxsize:268435456];
+  const A = "";
+  return `[out:json][timeout:25][maxsize:134217728][bbox:${bboxAround(lat, lon, r)}];
 (
 way${A}["bridge"]["bridge"!="no"];
 nwr${A}["man_made"="bridge"];
@@ -44,15 +46,13 @@ nwr${A}["historic"];
 nwr${A}["tourism"~"^(attraction|viewpoint|museum|camp_site|hotel|zoo)$"];
 nwr${A}["amenity"~"^(hospital|clinic|doctors|police|fire_station|fuel|school|college|university|place_of_worship|townhall|pharmacy|bank|marketplace|prison|community_centre|grave_yard|bus_station|ferry_terminal|water_point|drinking_water|shelter|post_office|courthouse|ranger_station)$"];
 );
-out tags geom(${bboxAround(lat, lon, r)}) ${FEAT_MAX};
-way${A}["building"];
-out count;`;
+out tags geom(${bboxAround(lat, lon, r)}) ${FEAT_MAX};`;
 }
 // Edificaciones "genéricas" (viviendas, techos, galpones sin uso): se cuentan pero no se listan una por una.
 const GENERIC_BLD = "^(yes|house|residential|apartments|detached|semidetached_house|terrace|hut|shed|roof|garage|garages|carport|bungalow|cabin|static_caravan|ruins)$";
 function extraQuery(lat, lon, r) {
-  const A = `(around:${r},${lat},${lon})`;
-  return `[out:json][timeout:45][maxsize:268435456];
+  const A = "";
+  return `[out:json][timeout:25][maxsize:134217728][bbox:${bboxAround(lat, lon, r)}];
 (
 way${A}["tunnel"]["tunnel"!~"^(no|building_passage)$"]["highway"!~"^(footway|path|steps|corridor|service)$"];
 nwr${A}["water"]["natural"!="water"];
@@ -68,7 +68,9 @@ out tags geom(${bboxAround(lat, lon, r)}) ${EXTRA_MAX};
 way${A}["building"]["building"!~"${GENERIC_BLD}"]["name"!~"."];
 nwr${A}["construction"]["name"!~"."];
 );
-out tags center ${BLD_MAX};`;
+out tags center ${BLD_MAX};
+way(around:${r},${lat},${lon})["building"];
+out count;`;
 }
 const WATER_LU = ["reservoir", "basin", "aquaculture", "salt_pond"];
 function classify(t) {
@@ -185,11 +187,11 @@ async function loadFeatures(id) {
   S.busy.feats = true; S.errs.feats = null; S.featsCut = false; S.featsExtra = null; featLayer.clearLayers(); renderFeats();
   const { lat, lon } = S.point, r = S.radius;
   let data = null;
-  try { data = await overpassFetch(overpassQuery(lat, lon, r), 65000); } catch (e) { if (id === reqId) { S.busy.feats = false; S.errs.feats = e.message; renderFeats(); } return; }
+  try { data = await overpassFetch(overpassQuery(lat, lon, r), 35000); } catch (e) { if (id === reqId) { S.busy.feats = false; S.errs.feats = e.message; renderFeats(); } return; }
   if (id !== reqId) return;
   S.busy.feats = false; esTags(data);
-  const seen = new Map(), ids = new Set(), els = data.elements || [], cnt = els.find(el => el.type === "count");
-  S.buildings = cnt ? +(cnt.tags.total || cnt.tags.ways || 0) : null; // todas las edificaciones mapeadas, con o sin nombre
+  const seen = new Map(), ids = new Set(), els = data.elements || [];
+  S.buildings = null;
   // Overpass corta la salida en FEAT_MAX sin avisar: si se llega al tope, faltan elementos y se dice en la ficha
   S.featsCut = els.filter(el => el.type !== "count").length >= FEAT_MAX;
   addFeatures(els, seen, ids);
@@ -197,13 +199,14 @@ async function loadFeatures(id) {
   drawFeatures(); renderFeats(); renderNav(); renderTerrain();
   // extras después (no a la vez: los servidores limitan las consultas simultáneas por usuario)
   let extra = null;
-  try { extra = await overpassFetch(extraQuery(lat, lon, r), 50000); } catch (_) { /* se queda lo principal */ }
+  try { extra = await overpassFetch(extraQuery(lat, lon, r), 35000); } catch (_) { /* se queda lo principal */ }
   if (id !== reqId) return;
   S.featsExtra = extra ? "ok" : "error";
   if (extra) {
     esTags(extra);
-    const xe = extra.elements || [];
-    if (xe.filter(el => !el.center).length >= EXTRA_MAX || xe.filter(el => el.center).length >= BLD_MAX) S.featsCut = true;
+    const xe = extra.elements || [], cnt = xe.find(el => el.type === "count");
+    S.buildings = cnt ? +(cnt.tags.total || cnt.tags.ways || 0) : null; // todas las edificaciones mapeadas, con o sin nombre
+    if (xe.filter(el => !el.center && el.type !== "count").length >= EXTRA_MAX || xe.filter(el => el.center).length >= BLD_MAX) S.featsCut = true;
     addFeatures(xe, seen, ids);
     drawFeatures(); renderNav(); renderTerrain();
   }
