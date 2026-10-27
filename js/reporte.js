@@ -6,6 +6,7 @@
 const REP_COLORS = { puente: "#c2410c", agua: "#1d6fd1", naturaleza: "#2f8a3c", estructura: "#6b4fa3", interes: "#b7791f", servicio: "#c22f4f" };
 const REP_LEVEL = [null, { t: "BAJO", c: "#2f8a3c" }, { t: "MODERADO", c: "#b7791f" }, { t: "ALTO", c: "#c22f4f" }];
 const REP_CSS = `
+.rep, .rep * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .rep { --c-naturaleza: #2f8a3c; --line: #dbe3ee; --muted: #5b6b80; font: 14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; color: #0f1c2e; }
 .rep h1 { font: 700 22px/1.2 "Sora", "Trebuchet MS", sans-serif; margin: 6px 0 2px; letter-spacing: -.01em; }
 .rep h2 { font: 700 15px "Sora", "Trebuchet MS", sans-serif; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #0f1c2e; text-transform: uppercase; letter-spacing: .04em; break-after: avoid; }
@@ -112,9 +113,17 @@ function renderReport() {
 }
 $("#repMode").addEventListener("click", () => { if (!REP.html) return; REP.mode = REP.mode === "breve" ? "detallado" : "breve"; renderReport(); });
 $("#repClose").addEventListener("click", () => { $("#report").hidden = true; });
-$("#repPrint").addEventListener("click", () => { if (REP.html) window.print(); });
-$("#repDownload").addEventListener("click", () => {
+// Antes de imprimir o guardar en PDF se asegura que el mapa del croquis esté cargado e incrustado
+async function ensureSketch() {
+  const P = S.point; if (!P) return;
+  if (REP.base && REP.base.key === `${P.lat},${P.lon},${S.radius}`) return;
+  const id = reqId; await sketchBase(id);
+  if (id === reqId && REP.base) renderReport();
+}
+$("#repPrint").addEventListener("click", async () => { if (!REP.html) return; await ensureSketch(); window.print(); });
+$("#repDownload").addEventListener("click", async () => {
   if (!REP.html) return;
+  await ensureSketch();
   const doc = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(REP.name)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>body{margin:0;background:#fff}.wrap{max-width:900px;margin:0 auto;padding:28px 24px}@media print{.wrap{padding:0;max-width:none}}${REP_CSS}${BRIEF_CSS}</style></head><body><div class="wrap">${REP.html}</div></body></html>`;
