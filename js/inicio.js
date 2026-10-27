@@ -19,7 +19,15 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !offline()) reg.update().catch(() => {}); });
   }).catch(() => {});
   let hadSW = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadSW) toast("App actualizada: los cambios se verán al volver a abrirla"); hadSW = true; });
+  // Versión nueva activa: se recarga sola (el enlace #lat,lon conserva el punto) si no hay nada abierto,
+  // o la próxima vez que se vuelva a la app con el reporte cerrado; así no se imprime con el código viejo
+  let stale = false;
+  const reloadIfIdle = () => { if (stale && $("#report").hidden) location.reload(); };
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hadSW) { stale = true; if (!S.point) return reloadIfIdle(); toast("App actualizada: se aplicará al volver a abrirla"); }
+    hadSW = true;
+  });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reloadIfIdle(); });
 }
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; $("#btnInstall").hidden = false; });
