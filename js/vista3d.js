@@ -5,21 +5,37 @@
 // MapLibre se descarga solo la primera vez que se abre la vista (unos 800 kB) y queda guardado para usarla sin conexión.
 // Encima van, si cargan, las curvas de nivel (maplibre-contour, calculadas en el navegador) y los nombres y edificios de OpenFreeMap.
 const ML_VER = "4.7.1", CONTOUR_VER = "0.1.0", OFM = "https://tiles.openfreemap.org";
+let glLost = false, loadWatch = 0, restoreUi = false;
 let gl = null, glLoading = null, glPin = null, glPopup = null, orbitRaf = 0, contours = null;
 const is3D = () => !$("#v3d").hidden;
+// En el teléfono la red móvil puede dejar un script colgado: cada descarga tiene tiempo límite y un segundo CDN de respaldo.
+function loadScript(urls, ms) {
+  return new Promise((ok, fail) => {
+    const tryAt = k => {
+      if (k >= urls.length) return fail(new Error("No se pudo descargar el visor 3D. Revisa la conexión y vuelve a tocar 3D."));
+      const el = document.createElement("script"); let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; el.remove(); tryAt(k + 1); } }, ms);
+      el.onload = () => { if (!done) { done = true; clearTimeout(t); ok(); } };
+      el.onerror = () => { if (!done) { done = true; clearTimeout(t); el.remove(); tryAt(k + 1); } };
+      el.src = urls[k]; document.head.append(el);
+    };
+    tryAt(0);
+  });
+}
+const cdn = (pkg, file) => [`https://unpkg.com/${pkg}/${file}`, `https://cdn.jsdelivr.net/npm/${pkg}/${file}`];
 function loadMapLibre() {
   if (window.maplibregl) return Promise.resolve();
-  return glLoading || (glLoading = new Promise((ok, fail) => {
-    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = `https://unpkg.com/maplibre-gl@${ML_VER}/dist/maplibre-gl.css`;
-    const js = document.createElement("script"); js.src = `https://unpkg.com/maplibre-gl@${ML_VER}/dist/maplibre-gl.js`;
-    js.onload = () => {
-      // el complemento de curvas es opcional: si no descarga, la vista 3D funciona igual sin ellas
-      const ct = document.createElement("script"); ct.src = `https://unpkg.com/maplibre-contour@${CONTOUR_VER}/dist/index.min.js`;
-      ct.onload = ct.onerror = ok; document.head.append(ct);
-    };
-    js.onerror = () => { glLoading = null; css.remove(); js.remove(); fail(new Error("No se pudo descargar el visor 3D. Revisa la conexión.")); };
-    document.head.append(css, js);
-  }));
+  return glLoading || (glLoading = (async () => {
+    if (!document.querySelector("link[data-ml]")) {
+      const css = document.createElement("link"); css.rel = "stylesheet"; css.dataset.ml = "1"; css.href = cdn(`maplibre-gl@${ML_VER}`, "dist/maplibre-gl.css")[0];
+      css.onerror = () => { css.href = cdn(`maplibre-gl@${ML_VER}`, "dist/maplibre-gl.css")[1]; };
+      document.head.append(css);
+    }
+    try { await loadScript(cdn(`maplibre-gl@${ML_VER}`, "dist/maplibre-gl.js"), 25000); }
+    catch (e) { glLoading = null; throw e; }
+    // el complemento de curvas es opcional: si no descarga a tiempo, la vista 3D abre igual sin ellas
+    await loadScript(cdn(`maplibre-contour@${CONTOUR_VER}`, "dist/index.min.js"), 8000).catch(() => {});
+  })());
 }
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
 const nameEs = ["coalesce", ["get", "name:es"], ["get", "name"]];
@@ -63,7 +79,7 @@ function style3D(zoom0) {
   }
   layers.push(
     { id: "edificios", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 14,
-      paint: { "fill-extrusion-color": "#e3ddd0", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 0.88 } },
+      paint: { "fill-extrusion-color": ["case", ["has", "colour"], ["to-color", ["get", "colour"], "#cdb592"], ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#d9c4a3", 12, "#cdb592", 30, "#b7aea3", 80, "#9eadbd", 200, "#8597ab"]], "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 0.95, "fill-extrusion-vertical-gradient": true } },
     { id: "n-vias", type: "symbol", source: "omt", "source-layer": "transportation_name", minzoom: 13,
       layout: { "symbol-placement": "line", "text-field": nameEs, "text-font": ["Noto Sans Regular"], "text-size": 11 }, paint: { ...HALO, "text-color": "#f3f4f6" } },
     { id: "n-rios", type: "symbol", source: "omt", "source-layer": "waterway", minzoom: 11, filter: ["in", ["get", "class"], ["literal", ["river", "stream", "canal"]]],
@@ -78,6 +94,7 @@ function style3D(zoom0) {
   return {
     version: 8, glyphs: OFM + "/fonts/{fontstack}/{range}.pbf", sources, layers,
     terrain: { source: "dem", exaggeration: exagFor(zoom0) },
+    light: { anchor: "map", position: [1.2, 225, 35], color: "#fff8ec", intensity: 0.45 }, // sol del suroeste: caras de los edificios con luz y sombra
     sky: { "sky-color": "#2f6fd0", "horizon-color": "#cfe0f4", "fog-color": "#dfe8f3", "sky-horizon-blend": 0.5, "horizon-fog-blend": 0.55, "fog-ground-blend": 0.85, "atmosphere-blend": 0.8 },
   };
 }
@@ -152,10 +169,14 @@ async function create3D(center, zoom) {
     container: "v3dMap", style: style3D(zoom), center, zoom, pitch: 0, bearing: 0, maxPitch: 85, minZoom: 4.5, maxZoom: 17.5,
     maxBounds: [[AREA_BBOX.w - 8, AREA_BBOX.s - 6], [AREA_BBOX.e + 8, AREA_BBOX.n + 6]],
     attributionControl: { compact: true }, fadeDuration: 150, cooperativeGestures: false,
+    // en pantallas de teléfono con densidad 3 el lienzo 3D ocupa demasiada memoria y el navegador lo descarta
+    pixelRatio: Math.min(devicePixelRatio || 1, matchMedia("(max-width: 860px)").matches ? 2 : 2.5),
   });
+  // Si el teléfono descarta el contexto WebGL (poca memoria, app en segundo plano) se vuelve a crear la vista
+  gl.getCanvas().addEventListener("webglcontextlost", e => { e.preventDefault(); glLost = true; if (is3D()) setTimeout(rebuild3D, 600); });
   gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true }), "top-right");
   gl.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
-  gl.on("load", () => { addOverlays(); sync3D(); exagNow = exagFor(gl.getZoom()); });
+  gl.on("load", () => { addOverlays(); if (restoreUi) { restoreUi = false; applyUi3D(); } sync3D(); exagNow = exagFor(gl.getZoom()); clearTimeout(loadWatch); $("#v3dLoad").hidden = true; });
   gl.on("zoomend", applyExag);
   gl.on("error", e => { if (e && e.error && /webgl/i.test(String(e.error.message))) toast("Este equipo no puede mostrar la vista 3D (WebGL desactivado)"); });
   gl.on("mousemove", e => {
@@ -172,22 +193,40 @@ async function create3D(center, zoom) {
   gl.on("move", () => { $("#v3dHud").textContent = `Rumbo ${Math.round((gl.getBearing() + 360) % 360)}° · inclinación ${Math.round(gl.getPitch())}°`; });
   ["mousedown", "touchstart", "wheel"].forEach(t => gl.getCanvasContainer().addEventListener(t, () => { if (orbitRaf) stopOrbit(); }, { passive: true }));
 }
-async function open3D(at) {
+// Capa base y capas encendidas según los botones (al recrear la vista se conserva lo que el usuario eligió)
+function applyUi3D() {
+  const b = document.querySelector("#v3dBase [aria-pressed=true]"); if (b && b.dataset.b !== "satelite") setBase3D(b.dataset.b);
+  document.querySelectorAll("#v3dLayers [data-l]").forEach(x => { const v = x.getAttribute("aria-pressed") === "true" ? "visible" : "none";
+    for (const id of LAYER_SETS[x.dataset.l]) if (gl.getLayer(id) && (gl.getLayoutProperty(id, "visibility") || "visible") !== v) gl.setLayoutProperty(id, "visibility", v); });
+}
+function destroy3D() { stopOrbit(); try { gl && gl.remove(); } catch (_) {} gl = null; glPin = null; glPopup = null; exagNow = 0; }
+function rebuild3D() {
+  if (!gl) return;
+  const c = gl.getCenter(), cam = { lat: c.lat, lon: c.lng, zoom: gl.getZoom(), pitch: gl.getPitch(), bearing: gl.getBearing() };
+  destroy3D(); glLost = false; restoreUi = true;
+  if (is3D()) open3D({ lat: cam.lat, lon: cam.lon }, cam);
+}
+async function open3D(at, cam) {
   const P = at || S.point, c = map.getCenter();
   const center = P ? [P.lon, P.lat] : [c.lng, c.lat];
-  const zoom = Math.min(16, Math.max(P ? 13.5 : 5, map.getZoom() - 1)); // las teselas de MapLibre son de 512 px: un nivel menos equivale a la misma escala
+  if (gl && glLost) destroy3D();
+  const zoom = cam ? cam.zoom : Math.min(16, Math.max(P ? 13.5 : 5, map.getZoom() - 1)); // las teselas de MapLibre son de 512 px: un nivel menos equivale a la misma escala
   $("#v3d").hidden = false; document.body.classList.add("in3d"); closeCtx();
-  $("#v3dLoad").hidden = !!gl;
+  $("#v3dLoad").hidden = !!gl; $("#v3dLoad").textContent = "Cargando vista 3D…";
   try {
-    if (!gl) await create3D(center, zoom);
-    else { gl.resize(); gl.jumpTo({ center, zoom, pitch: gl.getPitch() }); }
-  } catch (err) { $("#v3dLoad").hidden = true; close3D(); toast(err.message); return; }
-  $("#v3dLoad").hidden = true;
+    if (!gl) {
+      await create3D(center, zoom);
+      // si en 20 s no terminó de cargar (red lenta), se avisa sin cerrar: el mapa sigue cargando
+      loadWatch = setTimeout(() => { if (gl && !gl.loaded() && is3D()) { $("#v3dLoad").hidden = false; $("#v3dLoad").textContent = "La conexión está lenta: el relieve 3D sigue cargando…"; } }, 20000);
+      gl.once("idle", () => { clearTimeout(loadWatch); $("#v3dLoad").hidden = true; });
+    } else { gl.resize(); gl.jumpTo({ center, zoom, pitch: gl.getPitch() }); }
+  } catch (err) { destroy3D(); $("#v3dLoad").hidden = true; close3D(); toast(err.message || "No se pudo abrir la vista 3D en este equipo"); return; }
+  if (gl.loaded()) $("#v3dLoad").hidden = true;
   if (gl.isStyleLoaded()) sync3D();
   $("#v3dTrace").hidden = mPts.length < 2;
   if (!window.mlcontour) $("#v3dLayers [data-l=curvas]").hidden = true;
-  if (at && !S.point) pointPopup({ lat: at.lat, lng: at.lon });
-  const intro = () => gl.easeTo({ pitch: Math.max(gl.getPitch(), 62), bearing: gl.getBearing() || -25, duration: 1600 });
+  if (at && !S.point && !cam) pointPopup({ lat: at.lat, lng: at.lon });
+  const intro = () => cam ? gl.jumpTo({ pitch: cam.pitch, bearing: cam.bearing }) : gl.easeTo({ pitch: Math.max(gl.getPitch(), 62), bearing: gl.getBearing() || -25, duration: 1600 });
   gl.loaded() ? intro() : gl.once("load", intro);
 }
 function close3D() {

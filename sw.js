@@ -5,7 +5,7 @@ const APP = `app-${VERSION}`, LIBS = "libs-v1", TILES = "teselas-v2", ZONES = "z
 const MODS = ["nucleo", "mapa", "geo", "red", "espanol", "relieve", "busqueda", "fuentes", "entorno", "terreno", "mis-lugares", "ficha", "interfaz", "interaccion", "visor", "herramientas", "reconocimiento", "sin-conexion", "reporte", "vista3d", "inicio"];
 const SHELL = ["./", "index.html", "css/estilos.css", "manifest.webmanifest", "datos/venezuela.json", "datos/guyana.json", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css",
   "iconos/logo.svg", "iconos/icono-192.png", "iconos/icono-512.png", ...MODS.map(m => `js/${m}.js`)];
-const LIB_HOSTS = ["unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+const LIB_HOSTS = ["unpkg.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 const TILE_RE = /(arcgisonline\.com\/ArcGIS\/rest\/services\/.+\/tile\/|tile\.openstreetmap\.org|tile\.opentopomap\.org|elevation-tiles-prod\/terrarium\/|tiles\.openfreemap\.org\/(planet\/|fonts\/))/;
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(APP).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
