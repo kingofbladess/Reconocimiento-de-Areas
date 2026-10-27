@@ -20,36 +20,56 @@ function bboxAround(lat, lon, r) {
   const dLat = r / 111320, dLon = r / (111320 * Math.cos(lat * rad));
   return [lat - dLat, lon - dLon, lat + dLat, lon + dLon].map(v => v.toFixed(6)).join(",");
 }
+// Edificaciones "genéricas" (viviendas, techos, galpones sin uso): se cuentan pero no se listan una por una.
+const GENERIC_BLD = "^(yes|house|residential|apartments|detached|semidetached_house|terrace|hut|shed|roof|garage|garages|carport|bungalow|cabin|static_caravan|ruins)$";
+const FEAT_MAX = 1500, BLD_MAX = 600; // tope de elementos por bloque; si se alcanza se avisa en la ficha
 function overpassQuery(lat, lon, r) {
   const A = `(around:${r},${lat},${lon})`;
-  return `[out:json][timeout:60][maxsize:268435456];
+  return `[out:json][timeout:90][maxsize:536870912];
 (
 way${A}["bridge"]["bridge"!="no"];
 nwr${A}["man_made"="bridge"];
-way${A}["waterway"~"^(river|stream|canal)$"];
-nwr${A}["natural"~"^(water|wood|peak|wetland|beach|cliff|spring|volcano|cave_entrance|scrub|grassland|bay|hill|ridge|sand)$"];
-nwr${A}["leisure"~"^(park|nature_reserve|garden)$"];
-nwr${A}["boundary"="national_park"];
-nwr${A}["landuse"="forest"];
-nwr${A}["waterway"~"^(dam|weir|waterfall)$"];
-nwr${A}["man_made"~"^(tower|water_tower|mast|dam|lighthouse|silo|pier|chimney|storage_tank|antenna|communications_tower|petroleum_well|pipeline|works)$"];
-nwr${A}["power"~"^(plant|substation|generator)$"]["name"];
-nwr${A}["building"]["name"];
-nwr${A}["aeroway"~"^(aerodrome|helipad)$"];
+way${A}["tunnel"]["tunnel"!~"^(no|building_passage)$"]["highway"!~"^(footway|path|steps|corridor|service)$"];
+way${A}["waterway"~"^(river|stream|canal|drain|ditch|brook|rapids|tidal_channel)$"];
+nwr${A}["waterway"~"^(riverbank|dam|weir|waterfall|lock_gate|dock|boatyard)$"];
+nwr${A}["natural"~"^(water|wood|peak|wetland|beach|cliff|spring|volcano|cave_entrance|scrub|grassland|heath|bay|hill|ridge|sand|bare_rock|valley|saddle|cape|rock|stone|arch|shoal|reef|mud|glacier|hot_spring|geyser|sinkhole|gorge|plateau)$"];
+nwr${A}["landuse"~"^(forest|reservoir|basin|aquaculture|salt_pond|quarry|landfill|military|cemetery|construction|brownfield|industrial|railway|port|depot)$"];
+nwr${A}["water"]["natural"!="water"];
+nwr${A}["place"~"^(island|islet|archipelago|city|town|village|hamlet|isolated_dwelling|neighbourhood|suburb|quarter|farm|locality)$"];
+nwr${A}["leisure"~"^(park|nature_reserve|garden|stadium|sports_centre|marina|golf_course|track|water_park|slipway)$"];
+nwr${A}["boundary"~"^(national_park|protected_area)$"];
+nwr${A}["military"];
+nwr${A}["man_made"~"^(tower|water_tower|mast|dam|lighthouse|silo|pier|chimney|storage_tank|antenna|communications_tower|petroleum_well|pipeline|works|water_works|wastewater_plant|reservoir_covered|water_well|embankment|dyke|breakwater|groyne|crane|mineshaft|adit|cross|monitoring_station|telescope|kiln|gasometer|bunker_silo|tailings_pond|quay|levee|observatory|satellite_dish|offshore_platform)$"];
+nwr${A}["power"~"^(plant|substation|generator|line|minor_line|transformer)$"];
+nwr${A}["railway"~"^(rail|light_rail|subway|narrow_gauge|station|halt|tram)$"];
+nwr${A}["aerialway"];
+nwr${A}["barrier"~"^(city_wall|wall|retaining_wall|border_control|gate|toll_booth)$"]["name"];
+nwr${A}["aeroway"~"^(aerodrome|helipad|heliport|runway|airstrip)$"];
 nwr${A}["historic"];
-nwr${A}["tourism"~"^(attraction|viewpoint|museum|camp_site)$"];
-nwr${A}["amenity"~"^(hospital|clinic|police|fire_station|fuel|school|university|place_of_worship|townhall|pharmacy)$"];
-);
-out tags geom(${bboxAround(lat, lon, r)}) 900;
-way${A}["building"];
+nwr${A}["tourism"~"^(attraction|viewpoint|museum|camp_site|hotel|information|picnic_site|zoo)$"];
+nwr${A}["amenity"~"^(hospital|clinic|doctors|police|fire_station|fuel|school|college|university|kindergarten|place_of_worship|townhall|pharmacy|bank|marketplace|prison|community_centre|grave_yard|bus_station|ferry_terminal|water_point|drinking_water|shelter|post_office|courthouse|ranger_station|emergency_service)$"];
+nwr${A}["emergency"~"^(ambulance_station|assembly_point)$"];
+nwr${A}["office"="government"];
+)->.f;
+.f out tags geom(${bboxAround(lat, lon, r)}) ${FEAT_MAX};
+(
+nwr${A}["building"]["name"];
+nwr${A}["building"]["building"!~"${GENERIC_BLD}"];
+nwr${A}["construction"];
+nwr${A}["building"]["building:use"];
+)->.b;
+(.b; - .f;)->.b;
+.b out tags center ${BLD_MAX};
+nwr${A}["building"];
 out count;`;
 }
+const WATER_LU = ["reservoir", "basin", "aquaculture", "salt_pond"];
 function classify(t) {
   if ((t.bridge && t.bridge !== "no") || t.man_made === "bridge") return "puente";
-  if (t.waterway || ["water", "wetland", "spring", "bay"].includes(t.natural)) return "agua";
-  if (t.natural || t.landuse === "forest" || t.boundary === "national_park" || ["park", "nature_reserve", "garden"].includes(t.leisure)) return "naturaleza";
-  if (t.amenity) return "servicio";
-  if (t.historic || t.tourism) return "interes";
+  if (t.waterway || t.water || WATER_LU.includes(t.landuse) || ["water", "wetland", "spring", "bay", "hot_spring", "geyser", "shoal", "reef"].includes(t.natural)) return "agua";
+  if (t.natural || t.landuse === "forest" || ["national_park", "protected_area"].includes(t.boundary) || ["park", "nature_reserve", "garden"].includes(t.leisure) || ["island", "islet", "archipelago"].includes(t.place)) return "naturaleza";
+  if (t.amenity || t.emergency || t.office) return "servicio";
+  if (t.historic || t.tourism || t.place) return "interes";
   return "estructura";
 }
 const TYPE_ES = {
@@ -63,10 +83,49 @@ const TYPE_ES = {
   hospital: "Hospital", clinic: "Ambulatorio / clínica", police: "Policía", fire_station: "Bomberos", fuel: "Estación de servicio", school: "Escuela / liceo",
   university: "Universidad", place_of_worship: "Iglesia / templo", townhall: "Alcaldía", pharmacy: "Farmacia",
   attraction: "Atracción", viewpoint: "Mirador", museum: "Museo", camp_site: "Campamento",
+  drain: "Desagüe / caño", ditch: "Zanja / acequia", brook: "Arroyo", rapids: "Raudal / rápidos", tidal_channel: "Caño de marea", riverbank: "Cauce del río",
+  lock_gate: "Esclusa", dock: "Dique / dársena", boatyard: "Astillero", heath: "Sabana arbustiva", bare_rock: "Roca desnuda / laja", valley: "Valle",
+  saddle: "Abra / portachuelo", cape: "Cabo / punta", rock: "Roca", stone: "Piedra", arch: "Arco natural", shoal: "Bajo / banco de arena", reef: "Arrecife",
+  mud: "Fangal", glacier: "Glaciar", hot_spring: "Aguas termales", geyser: "Géiser", sinkhole: "Sima / dolina", gorge: "Cañón / garganta", plateau: "Meseta / tepuy",
+  quarry: "Cantera / mina", landfill: "Vertedero de basura", cemetery: "Cementerio", construction: "Construcción en curso", brownfield: "Terreno baldío",
+  industrial: "Zona industrial", port: "Puerto", depot: "Depósito / patio", aquaculture: "Lagunas de cría", salt_pond: "Salina", basin: "Laguna artificial", reservoir: "Embalse",
+  island: "Isla", islet: "Islote", archipelago: "Archipiélago", city: "Ciudad", town: "Pueblo", village: "Caserío / pueblo", hamlet: "Caserío",
+  isolated_dwelling: "Vivienda aislada", neighbourhood: "Sector / barrio", suburb: "Urbanización / parroquia", quarter: "Sector", farm: "Finca / hato", locality: "Paraje",
+  stadium: "Estadio", sports_centre: "Centro deportivo", marina: "Marina", golf_course: "Campo de golf", track: "Pista", water_park: "Parque acuático", slipway: "Rampa de botes",
+  protected_area: "Área protegida", water_works: "Planta potabilizadora", wastewater_plant: "Planta de tratamiento", reservoir_covered: "Tanque de agua",
+  water_well: "Pozo de agua", embankment: "Terraplén", dyke: "Dique", breakwater: "Rompeolas", groyne: "Espigón", crane: "Grúa", mineshaft: "Pozo minero",
+  adit: "Socavón / bocamina", cross: "Cruz", monitoring_station: "Estación de monitoreo", telescope: "Telescopio", kiln: "Horno", gasometer: "Gasómetro",
+  bunker_silo: "Silo búnker", tailings_pond: "Laguna de relaves", quay: "Muelle", levee: "Dique", observatory: "Observatorio", satellite_dish: "Antena satelital",
+  offshore_platform: "Plataforma costa afuera", line: "Línea eléctrica", minor_line: "Línea eléctrica", transformer: "Transformador",
+  rail: "Vía férrea", light_rail: "Tren ligero", subway: "Metro", narrow_gauge: "Vía férrea", station: "Estación", halt: "Parada de tren", tram: "Tranvía",
+  cable_car: "Teleférico", gondola: "Teleférico", chair_lift: "Telesilla", heliport: "Helipuerto", runway: "Pista de aterrizaje", airstrip: "Pista de aterrizaje",
+  city_wall: "Muralla", wall: "Muro", retaining_wall: "Muro de contención", border_control: "Puesto fronterizo", gate: "Portón / alcabala", toll_booth: "Peaje",
+  hotel: "Hotel / posada", information: "Información turística", picnic_site: "Área de picnic", zoo: "Zoológico", doctors: "Consultorio", college: "Instituto",
+  kindergarten: "Preescolar", bank: "Banco", marketplace: "Mercado", prison: "Cárcel", community_centre: "Centro comunal", grave_yard: "Cementerio",
+  bus_station: "Terminal de pasajeros", ferry_terminal: "Terminal de ferry", water_point: "Toma de agua", drinking_water: "Agua potable", shelter: "Refugio",
+  post_office: "Correo", courthouse: "Tribunal", ranger_station: "Puesto de guardaparques", emergency_service: "Emergencias", ambulance_station: "Ambulancias",
+  assembly_point: "Punto de encuentro", government: "Oficina de gobierno",
 };
+// Agua: lago, laguna, embalse… según la etiqueta water=*
+const WATER_ES = { lake: "Lago", lagoon: "Laguna", pond: "Laguna / estanque", reservoir: "Embalse", river: "Cauce del río", oxbow: "Madre vieja (laguna)", canal: "Canal",
+  basin: "Laguna artificial", wastewater: "Laguna de oxidación", fishpond: "Lagunas de cría", stream: "Quebrada", ditch: "Zanja", rapids: "Raudal", moat: "Foso", salt: "Salina", lock: "Esclusa" };
+const BLD_ES = { church: "Iglesia", chapel: "Capilla", cathedral: "Catedral", mosque: "Mezquita", temple: "Templo", school: "Escuela", university: "Universidad",
+  college: "Instituto", hospital: "Hospital", industrial: "Galpón industrial", warehouse: "Galpón / depósito", commercial: "Edificio comercial", retail: "Local comercial",
+  office: "Edificio de oficinas", hotel: "Hotel", government: "Edificio público", public: "Edificio público", civic: "Edificio público", military: "Edificio militar",
+  construction: "Edificación en construcción", farm: "Casa de finca", farm_auxiliary: "Instalación agrícola", barn: "Granero", stable: "Establo", cowshed: "Vaquera",
+  greenhouse: "Invernadero", hangar: "Hangar", train_station: "Estación", transportation: "Terminal", stadium: "Estadio", sports_hall: "Gimnasio", grandstand: "Tribuna",
+  parking: "Estacionamiento", service: "Caseta de servicio", water_tower: "Tanque elevado", tower: "Torre", bunker: "Búnker", fire_station: "Bomberos",
+  kindergarten: "Preescolar", supermarket: "Supermercado", dormitory: "Residencia", hut: "Rancho", ruins: "Ruinas", bridge: "Puente", toilets: "Baños", kiosk: "Kiosco" };
 function typeLabel(t, cat) {
   if (cat === "puente") { const via = t.railway ? "férreo" : ["footway", "path", "pedestrian", "steps", "cycleway"].includes(t.highway) ? "peatonal" : t.highway ? "vehicular" : ""; return "Puente" + (via ? " " + via : ""); }
-  const k = t.waterway || t.natural || (t.landuse === "forest" && "forest") || (t.boundary === "national_park" && "national_park") || t.leisure || t.man_made || t.power || t.aeroway || t.amenity || t.tourism;
+  if (t.tunnel && t.tunnel !== "no" && (t.highway || t.railway || t.waterway)) return t.waterway ? "Embaulado / alcantarilla" : t.railway ? "Túnel férreo" : "Túnel";
+  if (t.water && WATER_ES[t.water]) return WATER_ES[t.water];
+  if (t.construction || t.building === "construction" || t.landuse === "construction") return "Construcción en curso";
+  if (t.building && !new RegExp(GENERIC_BLD).test(t.building) && BLD_ES[t.building] && !t.amenity) return BLD_ES[t.building];
+  if (t.power === "line" || t.power === "minor_line") { const kv = parseFloat(String(t.voltage || "").split(";")[0]) / 1000; return "Línea eléctrica" + (kv >= 1 ? ` ${Math.round(kv)} kV` : ""); }
+  if (t.military) return "Zona militar";
+  const k = t.waterway || t.natural || (WATER_LU.includes(t.landuse) && t.landuse) || (t.boundary && TYPE_ES[t.boundary] && t.boundary) || t.leisure || t.man_made || t.power
+    || t.railway || (t.aerialway && (TYPE_ES[t.aerialway] ? t.aerialway : "cable_car")) || t.aeroway || t.amenity || t.emergency || t.office || t.tourism || t.place || t.landuse || t.barrier;
   if (k && TYPE_ES[k]) return TYPE_ES[k];
   if (t.historic) return "Sitio histórico";
   if (t.building) return "Edificación";
@@ -94,19 +153,26 @@ async function loadFeatures(id) {
   if (id !== reqId) return;
   S.busy.feats = false; esTags(data);
   if (!data) { S.errs.feats = (lastErr && lastErr.message) || "No se pudieron cargar los alrededores"; renderFeats(); return; }
-  const seen = new Map(), cnt = (data.elements || []).find(el => el.type === "count");
+  const seen = new Map(), ids = new Set(), els = data.elements || [], cnt = els.find(el => el.type === "count");
   S.buildings = cnt ? +(cnt.tags.total || cnt.tags.ways || 0) : null; // todas las edificaciones mapeadas, con o sin nombre
-  for (const el of data.elements || []) {
-    if (el.type === "count") continue;
+  // Overpass corta cada bloque en FEAT_MAX / BLD_MAX sin avisar: si se llega al tope, faltan elementos y se dice en la ficha
+  const withGeom = els.filter(el => el.type !== "count" && !el.center).length, withCenter = els.filter(el => el.center).length;
+  S.featsCut = withGeom >= FEAT_MAX || withCenter >= BLD_MAX;
+  for (const el of els) {
+    if (el.type === "count" || ids.has(el.type + el.id)) continue;
+    ids.add(el.type + el.id);
     const t = el.tags || {}, cat = classify(t), lines = geomsOf(el);
     let best = null;
     if (el.type === "node") best = { lat: el.lat, lon: el.lon, d: dist(S.point, el) };
+    else if (el.center) best = { lat: el.center.lat, lon: el.center.lon, d: dist(S.point, el.center) };
     else for (const line of lines) { const n = line.length ? nearestOn(S.point, line) : null; if (n && (!best || n.d < best.d)) best = n; }
     if (!best || best.d > r * 1.05) continue;
     const name = t.name || t.ref || ""; // esTags ya dejó el nombre en español
     const f = { id: el.type + el.id, cat, name, type: typeLabel(t, cat), tags: t, lat: best.lat, lon: best.lon, d: best.d, lines, parts: 1,
       closed: lines.length > 0 && lines.every(l => l.length > 3 && l[0].lat === l[l.length - 1].lat && l[0].lon === l[l.length - 1].lon) };
-    const key = name ? `${cat}|${f.type}|${name}` : f.id, prev = seen.get(key);
+    // los tramos sin nombre de líneas eléctricas, vías férreas, tuberías y teleféricos se agrupan en un solo elemento
+    const linear = !name && lines.length && (t.power || t.railway || t.aerialway || t.man_made === "pipeline");
+    const key = name ? `${cat}|${f.type}|${name}` : linear ? `${cat}|${f.type}` : f.id, prev = seen.get(key);
     if (prev) { prev.lines.push(...lines); prev.parts++; if (f.d < prev.d) Object.assign(prev, { lat: f.lat, lon: f.lon, d: f.d }); }
     else seen.set(key, f);
   }
