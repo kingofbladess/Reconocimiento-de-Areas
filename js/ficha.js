@@ -149,6 +149,11 @@ function sparkline(w) {
 const tile = (g, i, it) => it.pdf
   ? `<button class="ph doc" data-view="${g}:${i}" title="${esc(it.title)}"><span class="ic">PDF</span><span class="pc">${esc(it.title)}</span></button>`
   : `<button class="ph" data-view="${g}:${i}" title="${esc(it.title)}"><img loading="lazy" src="${esc(it.thumb || it.src)}" alt="${esc(it.title)}"><span class="pc">${it.cap || esc(it.title)}</span></button>`;
+// Foto que no carga: en vez del texto alternativo, una tarjeta gris con "Foto no disponible"
+document.addEventListener("error", e => {
+  const im = e.target, ph = im.parentNode;
+  if (im.tagName === "IMG" && ph && ph.classList && ph.classList.contains("ph")) { ph.classList.add("broken"); im.remove(); }
+}, true);
 function renderPhotos() {
   const el = $("#s-fotos"); if (!el) return;
   const r = Math.min(10000, Math.max(2000, S.radius * 2));
