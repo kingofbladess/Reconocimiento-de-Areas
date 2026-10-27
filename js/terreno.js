@@ -66,13 +66,20 @@ out tags geom(${bboxAround(lat, lon, 3000)}) 800;`;
 async function loadGround(id) {
   S.busy.ground = true; S.errs.ground = null; S.ground = null; renderTerrain();
   const { lat, lon } = S.point, body = "data=" + encodeURIComponent(groundQuery(lat, lon));
+  // respaldo con las teselas del mapa: se muestra si Overpass tarda y se queda si Overpass falla
+  const tilesP = tileGround(lat, lon).catch(() => null);
   let data = null, lastErr = null;
+  tilesP.then(g => { if (g && id === reqId && !data && S.busy.ground) { S.ground = g; renderTerrain(); } });
   for (const [i, ep] of OVERPASS.entries()) {
-    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1, check: overpassCheck }, 45000, 1); break; } catch (e) { lastErr = e; }
+    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1, check: overpassCheck }, 30000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
   S.busy.ground = false; esTags(data);
-  if (!data) { S.errs.ground = (lastErr && lastErr.message) || "No se pudo consultar OpenStreetMap"; renderTerrain(); return; }
+  if (!data) {
+    const g = await tilesP; if (id !== reqId) return;
+    if (g) { S.ground = g; renderTerrain(); return; }
+    S.errs.ground = (lastErr && lastErr.message) || "No se pudo consultar OpenStreetMap"; renderTerrain(); return;
+  }
   const areas = [], roads = [];
   for (const el of data.elements || []) {
     const t = el.tags || {};
@@ -208,7 +215,7 @@ function renderTerrain() {
   else if (S.ground) {
     const g = S.ground, seen = new Set(), tags = [];
     for (const a of g.areas) for (const k of ["boundary", "leisure", "landuse", "natural", "water", "place", "military", "aeroway", "amenity", "man_made", "landcover", "building"]) {
-      const lab = k === "water" ? WATER_ES[a[k]] : k === "military" ? "Zona militar" : k === "building" ? (a.name ? BLD_ES[a[k]] || "Edificación" : null) : COVER_ES[a[k]] || (/^(aeroway|amenity|man_made)$/.test(k) && TYPE_ES[a[k]]);
+      const lab = !a[k] ? null : k === "water" ? WATER_ES[a[k]] : k === "military" ? "Zona militar" : k === "building" ? (a.name ? BLD_ES[a[k]] || "Edificación" : null) : COVER_ES[a[k]] || (/^(aeroway|amenity|man_made)$/.test(k) && TYPE_ES[a[k]]);
       if (!lab) continue;
       const txt = a.name && /^(boundary|leisure|water|place|aeroway|amenity|man_made|building|military)$/.test(k) || a.name && ["water", "wetland", "reservoir", "basin"].includes(a[k]) ? `${lab}: ${a.name}` : lab;
       if (!seen.has(txt)) { seen.add(txt); tags.push(txt); }

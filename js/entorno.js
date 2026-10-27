@@ -178,18 +178,33 @@ function addFeatures(els, seen, ids) {
     // los tramos sin nombre de líneas eléctricas, vías férreas, tuberías y teleféricos se agrupan en un solo elemento
     const linear = !name && lines.length && (t.power || t.railway || t.aerialway || t.man_made === "pipeline");
     const key = name ? `${cat}|${f.type}|${name}` : linear ? `${cat}|${f.type}` : f.id, prev = seen.get(key);
-    if (prev) { prev.lines.push(...lines); prev.parts++; if (f.d < prev.d) Object.assign(prev, { lat: f.lat, lon: f.lon, d: f.d }); }
+    if (prev) { prev.lines.push(...lines); if (lines.length) prev.parts++; if (f.d < prev.d) Object.assign(prev, { lat: f.lat, lon: f.lon, d: f.d }); }
     else seen.set(key, f);
   }
   S.feats = [...seen.values()].sort((a, b) => a.d - b.d);
 }
+// Entorno desde las teselas (respaldo): rápido, pero con menos detalle que Overpass
+function showTileFeatures(tl, src) {
+  esTags(tl);
+  S.buildings = null; S.featsCut = false; S.featsExtra = null; S.featsSrc = src; S.busy.feats = false;
+  addFeatures(tl.elements, new Map(), new Set());
+  drawFeatures(); renderFeats(); renderNav(); renderTerrain();
+}
 async function loadFeatures(id) {
-  S.busy.feats = true; S.errs.feats = null; S.featsCut = false; S.featsExtra = null; featLayer.clearLayers(); renderFeats();
+  S.busy.feats = true; S.errs.feats = null; S.featsCut = false; S.featsExtra = null; S.featsSrc = "osm"; featLayer.clearLayers(); renderFeats();
   const { lat, lon } = S.point, r = S.radius;
-  let data = null;
-  try { data = await overpassFetch(overpassQuery(lat, lon, r), 35000); } catch (e) { if (id === reqId) { S.busy.feats = false; S.errs.feats = e.message; renderFeats(); } return; }
+  // las teselas arrancan a la vez: si Overpass tarda, se muestran mientras tanto; si Overpass falla, se quedan
+  const tilesP = tileFeatures(lat, lon, r).catch(() => null);
+  let data = null, err = null;
+  tilesP.then(tl => { if (tl && id === reqId && !data && S.busy.feats) showTileFeatures(tl, "rapida"); });
+  try { data = await overpassFetch(overpassQuery(lat, lon, r), 35000); } catch (e) { err = e; }
   if (id !== reqId) return;
-  S.busy.feats = false; esTags(data);
+  if (!data) {
+    const tl = await tilesP; if (id !== reqId) return;
+    if (tl) { showTileFeatures(tl, "teselas"); return; }
+    S.busy.feats = false; S.errs.feats = err ? err.message : "No se pudieron cargar los alrededores"; renderFeats(); return;
+  }
+  S.busy.feats = false; S.featsSrc = "osm"; esTags(data);
   const seen = new Map(), ids = new Set(), els = data.elements || [];
   S.buildings = null;
   // Overpass corta la salida en FEAT_MAX sin avisar: si se llega al tope, faltan elementos y se dice en la ficha
