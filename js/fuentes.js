@@ -55,18 +55,25 @@ async function fromWikidata(qid) {
     facts, web, source: title ? (lang === "en" ? "Wikipedia en inglés (traducida) y Wikidata" : "Wikipedia y Wikidata") : "Wikidata",
   };
 }
+// La búsqueda por nombre puede traer un homónimo de otro país (p. ej. "El Dorado" → un distrito de Perú):
+// se acepta solo un artículo situado cerca del punto o que mencione el país o el estado.
 async function fromWikiSearch(q, lang = "es") {
-  const d = await getJSON(`https://${lang}.wikipedia.org/w/api.php?format=json&origin=*&action=query&list=search&srlimit=1&srsearch=${encodeURIComponent(q)}`);
-  const hit = d.query && d.query.search && d.query.search[0]; if (!hit) return null;
-  const s = await wikiSummary(hit.title, lang);
-  if (!s || !s.extract) return null;
-  return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, facts: [], source: lang === "en" ? "Wikipedia en inglés, traducida (zona)" : "Wikipedia (zona)" };
+  const d = await getJSON(`https://${lang}.wikipedia.org/w/api.php?format=json&origin=*&action=query&list=search&srlimit=3&srsearch=${encodeURIComponent(q)}`);
+  const ad = adminOf(S.place), near = new RegExp(["Venezuela", "Guyana", "Guayana", ad.estado].filter(Boolean).map(w => w.replace(/^Estado\s+/i, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "i");
+  for (const hit of (d.query && d.query.search) || []) {
+    const s = await wikiSummary(hit.title, lang);
+    if (!s || !s.extract) continue;
+    if (s.coords ? dist(S.point, s.coords) > 80000 : !near.test(`${s.description} ${s.extract}`)) continue;
+    return { title: s.title, description: s.description, extract: s.extract, url: s.url, image: s.image, facts: [], source: lang === "en" ? "Wikipedia en inglés, traducida (zona)" : "Wikipedia (zona)" };
+  }
+  return null;
 }
 // Resumen de un artículo; el de la Wikipedia en inglés se entrega traducido
 async function wikiSummary(title, lang = "es") {
   const s = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
   const [description, extract] = lang === "en" ? await Promise.all([toEs(s.description || ""), toEs(s.extract || "")]) : [s.description || "", s.extract || ""];
-  return { title: lang === "en" ? esName(s.title) : s.title, description, extract, url: s.content_urls && s.content_urls.desktop.page, image: s.originalimage ? (s.thumbnail || s.originalimage).source.replace(/\/\d+px-/, "/900px-") : null };
+  return { title: lang === "en" ? esName(s.title) : s.title, description, extract, url: s.content_urls && s.content_urls.desktop.page, image: s.originalimage ? (s.thumbnail || s.originalimage).source.replace(/\/\d+px-/, "/900px-") : null,
+    coords: s.coordinates && s.coordinates.lat != null ? { lat: s.coordinates.lat, lon: s.coordinates.lon } : null };
 }
 const commonsFile = (name, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name.replace(/^File:/, ""))}?width=${w}`;
 

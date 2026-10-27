@@ -59,7 +59,7 @@ async function selectPoint(lat, lon, opts = {}) {
   const id = ++reqId;
   const custom = opts.custom || MY.places.find(p => dist(p, { lat, lon }) < 3) || null;
   NET.staleAt = null;
-  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, recon: !!opts.recon, weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], terrain: null, ground: null, custom, busy: {}, errs: {} });
+  Object.assign(S, { point: { lat, lon }, place: opts.place || null, title: opts.title || null, recon: !!opts.recon, weather: null, air: null, info: null, sat: null, photos: [], wiki: [], feats: [], buildings: null, terrain: null, ground: null, custom, busy: {}, errs: {} });
   featLayer.clearLayers(); wikiLayer.clearLayers();
   if (pointMarker) pointMarker.setLatLng([lat, lon]);
   else pointMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true, zIndexOffset: 1000 }).addTo(map)
