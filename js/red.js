@@ -67,6 +67,14 @@ async function fetchJSON(url, opts, ms) {
 // opts.key: clave de la copia guardada (por defecto la dirección, más el cuerpo en las consultas POST de Overpass).
 // opts.stale = false: si falla no usa la copia (para probar antes otro servidor de la lista).
 // opts.check(d): valida la respuesta (lanza si no sirve); una respuesta inválida no se guarda ni se usa de copia.
+// Los servidores de Overpass dan 2 consultas a la vez por usuario: la tercera (entorno + terreno + redes) recibía 429.
+// Se ponen en fila para no pasar de 2 simultáneas.
+const OP_SLOTS = { busy: 0, wait: [] };
+async function overpassTurn(fn) {
+  if (OP_SLOTS.busy >= 2) await new Promise(res => OP_SLOTS.wait.push(res));
+  OP_SLOTS.busy++;
+  try { return await fn(); } finally { OP_SLOTS.busy--; const next = OP_SLOTS.wait.shift(); if (next) next(); }
+}
 const okData = (check, d) => { try { check(d); return true; } catch (_) { return false; } };
 async function getJSON(url, options = {}, ms = 30000, tries = 2) {
   const { key: k, stale = true, check, ...opts } = options, key = k || (opts.body ? `${url}\n${opts.body}` : url);
@@ -76,7 +84,7 @@ async function getJSON(url, options = {}, ms = 30000, tries = 2) {
     throw netErr("Sin conexión y sin datos guardados de este punto. Se guardan solos cada vez que abres una ficha con internet.", false);
   }
   for (let a = 1; ; a++) {
-    try { const { d, n } = await fetchJSON(url, opts, ms); if (check) check(d); respDB.put(key, d, n); return d; }
+    try { const { d, n } = /overpass/.test(url) ? await overpassTurn(() => fetchJSON(url, opts, ms)) : await fetchJSON(url, opts, ms); if (check) check(d); respDB.put(key, d, n); return d; }
     catch (e) {
       if (a < tries && e.retry) { await sleep(1800 * a); continue; }
       const c = stale && await respDB.get(key);
