@@ -53,7 +53,7 @@ async function loadTerrain(id) {
   if (id === reqId) { S.busy.terrain = false; renderTerrain(); renderCoords(); }
 }
 function groundQuery(lat, lon) {
-  return `[out:json][timeout:25];
+  return `[out:json][timeout:40];
 is_in(${lat},${lon})->.a;
 area.a[~"^(landuse|natural|leisure|boundary)$"~"."]->.b;
 .b out tags;
@@ -68,7 +68,7 @@ async function loadGround(id) {
   const { lat, lon } = S.point, body = "data=" + encodeURIComponent(groundQuery(lat, lon));
   let data = null, lastErr = null;
   for (const [i, ep] of OVERPASS.entries()) {
-    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
+    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1, check: overpassCheck }, 45000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
   S.busy.ground = false; esTags(data);
