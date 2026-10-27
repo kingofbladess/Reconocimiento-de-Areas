@@ -8,6 +8,13 @@ const map = L.map("map", { zoomControl: false, worldCopyJump: false, minZoom: 5,
   zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 110, wheelDebounceTime: 25, bounceAtZoomLimits: false,
   inertiaDeceleration: 2200, easeLinearity: 0.2, doubleClickZoom: true,
   maxBounds: [[AREA_BBOX.s - 3, AREA_BBOX.w - 4], [AREA_BBOX.n + 4, AREA_BBOX.e + 4]] });
+// Si el mapa no se entera de que su contenedor cambió de tamaño (girar el teléfono, maximizar la ventana, teclado,
+// volver de otra app o de la vista 3D) solo pinta el rectángulo del tamaño viejo y el resto queda vacío: se vigila siempre.
+function fitMapSize() { const c = map.getContainer(), s = map.getSize(); if (c.clientWidth && (c.clientWidth !== s.x || c.clientHeight !== s.y)) map.invalidateSize({ pan: false }); }
+if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(fitMapSize)).observe(map.getContainer());
+["resize", "orientationchange", "pageshow", "focus"].forEach(t => window.addEventListener(t, () => setTimeout(fitMapSize, 120)));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(fitMapSize, 120); });
+if (window.visualViewport) visualViewport.addEventListener("resize", () => setTimeout(fitMapSize, 120));
 L.control.zoom({ position: "topright", zoomInTitle: "Acercar (+)", zoomOutTitle: "Alejar (−)" }).addTo(map);
 // Botones bajo el zoom: vista 3D, mi ubicación y norte/país
 const MapButtons = L.Control.extend({
@@ -27,10 +34,36 @@ map.fitBounds(areaBounds);
 // crossOrigin: las teselas llegan como respuestas CORS normales; así el modo sin conexión las guarda con su tamaño real
 // (las respuestas "opacas" ocupan unos 7 MB cada una en la cuota del navegador y la llenaban enseguida)
 const TILE_OPTS = { crossOrigin: "anonymous", keepBuffer: 3 };
-const tl = (url, o) => L.tileLayer(url, { ...TILE_OPTS, ...o });
+// Si una tesela no existe o no llega (Esri no tiene imagen a 18–19 en gran parte del país, mala señal, sin conexión),
+// se pinta ampliado el trozo de la tesela de un nivel anterior. Antes quedaba el fondo vacío: al acercar en el teléfono
+// la pantalla se ponía azul oscuro (o gris con "Map data not yet available").
+const FB_LEVELS = 6;
+const FallbackTiles = L.TileLayer.extend({
+  createTile(coords, done) { const t = L.TileLayer.prototype.createTile.call(this, coords, done); t._c = coords; t._fb = 0; return t; },
+  _tileOnError(done, tile, e) {
+    const c = tile._c, n = ++tile._fb, z = c.z - n;
+    if (!c || n > FB_LEVELS || z < 0) return L.TileLayer.prototype._tileOnError.call(this, done, tile, e);
+    const k = 2 ** n, img = new Image(), sz = this.getTileSize();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const cv = document.createElement("canvas"); cv.width = sz.x; cv.height = sz.y;
+        const g = cv.getContext("2d"), w = img.naturalWidth / k, h = img.naturalHeight / k;
+        g.imageSmoothingQuality = "high";
+        g.drawImage(img, (c.x % k) * w, (c.y % k) * h, w, h, 0, 0, sz.x, sz.y);
+        tile.src = cv.toDataURL("image/jpeg", 0.88); // dispara "load" de la tesela: Leaflet la da por cargada
+      } catch (err) { this._tileOnError(done, tile, err); }
+    };
+    img.onerror = () => this._tileOnError(done, tile, e);
+    img.src = L.Util.template(this._url, L.Util.extend({ s: this._getSubdomain({ x: c.x >> n, y: c.y >> n }), x: c.x >> n, y: c.y >> n, z, r: "" }, this.options));
+  },
+});
+const tl = (url, o) => new FallbackTiles(url, { ...TILE_OPTS, ...o });
+// blankTile=false: donde Esri no tiene imagen responde "no existe" en lugar de un cuadro gris, y se usa el nivel anterior
+const ESRI_IMG = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false";
 const base = {
   satelite: L.layerGroup([
-    tl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imágenes &copy; Esri, Maxar" }),
+    tl(ESRI_IMG, { maxZoom: 19, attribution: "Imágenes &copy; Esri, Maxar" }),
     tl("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 }),
   ]),
   mapa: tl("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" }),

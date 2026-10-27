@@ -1,12 +1,12 @@
 // Service worker: abre la app al instante (también sin conexión) y guarda las teselas del mapa ya vistas.
 // Al cambiar archivos de la app, sube VERSION: así se descargan todos juntos en la versión nueva.
-const VERSION = "v3.9.0";
+const VERSION = "v3.9.9";
 const APP = `app-${VERSION}`, LIBS = "libs-v1", TILES = "teselas-v2", ZONES = "zonas-v1", MAX_TILES = 4000;
 const MODS = ["nucleo", "mapa", "geo", "red", "espanol", "relieve", "busqueda", "fuentes", "entorno", "redes", "terreno", "mis-lugares", "ficha", "interfaz", "interaccion", "visor", "herramientas", "reconocimiento", "sin-conexion", "reporte", "vista3d", "inicio"];
 const SHELL = ["./", "index.html", "css/estilos.css", "manifest.webmanifest", "datos/venezuela.json", "datos/guyana.json", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css",
   "iconos/logo.svg", "iconos/icono-192.png", "iconos/icono-512.png", ...MODS.map(m => `js/${m}.js`)];
-const LIB_HOSTS = ["unpkg.com", "fonts.googleapis.com", "fonts.gstatic.com"];
-const TILE_RE = /(arcgisonline\.com\/ArcGIS\/rest\/services\/.+\/tile\/|tile\.openstreetmap\.org|tile\.opentopomap\.org|elevation-tiles-prod\/terrarium\/)/;
+const LIB_HOSTS = ["unpkg.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
+const TILE_RE = /(arcgisonline\.com\/ArcGIS\/rest\/services\/.+\/tile\/|tile\.openstreetmap\.org|tile\.opentopomap\.org|elevation-tiles-prod\/terrarium\/|tiles\.openfreemap\.org\/(planet\/|fonts\/))/;
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(APP).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
@@ -25,7 +25,9 @@ function trimTiles() {
   })().finally(() => { trimming = null; });
 }
 async function cacheFirst(req, name, after) {
-  const hit = await caches.match(req, { ignoreVary: true }); if (hit) return hit;
+  // Las zonas bajadas antes de v3.9.6 guardaron la imagen de Esri sin "?blankTile=false"
+  const hit = await caches.match(req, { ignoreVary: true }) || (req.url.includes("blankTile=") ? await caches.match(req.url.split("?")[0], { ignoreVary: true }) : null);
+  if (hit) return hit;
   const res = await fetch(req);
   if (res.ok) { const c = await caches.open(name); await c.put(req, res.clone()); if (after) after(); }
   return res;

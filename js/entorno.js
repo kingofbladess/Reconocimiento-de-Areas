@@ -9,6 +9,12 @@ const CATS = {
 };
 const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
 const FORM = { "Content-Type": "application/x-www-form-urlencoded" };
+// Overpass responde 200 aunque la consulta se corte por tiempo o memoria (zonas urbanas densas): trae "remark" y
+// ningún elemento. Antes eso se tomaba como "no hay nada" (0 estructuras en pleno Caracas) y quedaba guardado.
+function overpassCheck(d) {
+  if (!d || !Array.isArray(d.elements)) throw netErr("OpenStreetMap devolvió una respuesta incompleta", true);
+  if (d.remark && /error|timed out|out of memory|timeout/i.test(d.remark)) throw netErr("OpenStreetMap cortó la consulta por saturación. Reintenta en unos segundos.", true);
+}
 
 function bboxAround(lat, lon, r) {
   const dLat = r / 111320, dLon = r / (111320 * Math.cos(lat * rad));
@@ -16,7 +22,7 @@ function bboxAround(lat, lon, r) {
 }
 function overpassQuery(lat, lon, r) {
   const A = `(around:${r},${lat},${lon})`;
-  return `[out:json][timeout:25];
+  return `[out:json][timeout:60][maxsize:268435456];
 (
 way${A}["bridge"]["bridge"!="no"];
 nwr${A}["man_made"="bridge"];
@@ -34,7 +40,9 @@ nwr${A}["historic"];
 nwr${A}["tourism"~"^(attraction|viewpoint|museum|camp_site)$"];
 nwr${A}["amenity"~"^(hospital|clinic|police|fire_station|fuel|school|university|place_of_worship|townhall|pharmacy)$"];
 );
-out tags geom(${bboxAround(lat, lon, r)}) 900;`;
+out tags geom(${bboxAround(lat, lon, r)}) 900;
+way${A}["building"];
+out count;`;
 }
 function classify(t) {
   if ((t.bridge && t.bridge !== "no") || t.man_made === "bridge") return "puente";
@@ -81,13 +89,15 @@ async function loadFeatures(id) {
   const { lat, lon } = S.point, r = S.radius, body = "data=" + encodeURIComponent(overpassQuery(lat, lon, r));
   let data = null, lastErr = null;
   for (const [i, ep] of OVERPASS.entries()) { // un servidor tras otro; la copia guardada solo si fallan todos
-    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1 }, 30000, 1); break; } catch (e) { lastErr = e; }
+    try { data = await getJSON(ep, { method: "POST", body, headers: FORM, key: "overpass\n" + body, stale: i === OVERPASS.length - 1, check: overpassCheck }, 65000, 1); break; } catch (e) { lastErr = e; }
   }
   if (id !== reqId) return;
   S.busy.feats = false; esTags(data);
   if (!data) { S.errs.feats = (lastErr && lastErr.message) || "No se pudieron cargar los alrededores"; renderFeats(); return; }
-  const seen = new Map();
+  const seen = new Map(), cnt = (data.elements || []).find(el => el.type === "count");
+  S.buildings = cnt ? +(cnt.tags.total || cnt.tags.ways || 0) : null; // todas las edificaciones mapeadas, con o sin nombre
   for (const el of data.elements || []) {
+    if (el.type === "count") continue;
     const t = el.tags || {}, cat = classify(t), lines = geomsOf(el);
     let best = null;
     if (el.type === "node") best = { lat: el.lat, lon: el.lon, d: dist(S.point, el) };

@@ -151,6 +151,11 @@ function sparkline(w) {
 const tile = (g, i, it) => it.pdf
   ? `<button class="ph doc" data-view="${g}:${i}" title="${esc(it.title)}"><span class="ic">PDF</span><span class="pc">${esc(it.title)}</span></button>`
   : `<button class="ph" data-view="${g}:${i}" title="${esc(it.title)}"><img loading="lazy" src="${esc(it.thumb || it.src)}" alt="${esc(it.title)}"><span class="pc">${it.cap || esc(it.title)}</span></button>`;
+// Foto que no carga: en vez del texto alternativo, una tarjeta gris con "Foto no disponible"
+document.addEventListener("error", e => {
+  const im = e.target, ph = im.parentNode;
+  if (im.tagName === "IMG" && ph && ph.classList && ph.classList.contains("ph")) { ph.classList.add("broken"); im.remove(); }
+}, true);
 function renderPhotos() {
   const el = $("#s-fotos"); if (!el) return;
   const r = Math.min(10000, Math.max(2000, S.radius * 2));
@@ -199,7 +204,8 @@ function renderFeats() {
   const counts = {}; S.feats.forEach(f => counts[f.cat] = (counts[f.cat] || 0) + 1);
   const chips = Object.entries(CATS).map(([k, c]) => `<button class="chip" data-cat="${k}" aria-pressed="${!S.hiddenCats.has(k)}" style="--c:var(${c.color})"><i></i>${c.label} <span class="n">${counts[k] || 0}</span></button>`).join("");
   const vis = S.feats.filter(f => !S.hiddenCats.has(f.cat));
-  el.innerHTML = h + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
+  const bld = S.buildings != null ? `<p class="src" style="margin:0 0 6px">${fmtNum(S.buildings)} edificaciones mapeadas en ${fmtDist(S.radius)} (se listan las que tienen nombre).</p>` : "";
+  el.innerHTML = h + bld + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
     <button class="row" data-feat="${esc(f.id)}" style="--c:var(${CATS[f.cat].color})"><span class="bar"></span>
       <span><b>${esc(f.name || f.type)}</b><span>${esc(f.name ? f.type : CATS[f.cat].label)}${f.parts > 1 ? ` · ${f.parts} tramos` : ""}</span></span>
       <span class="d">${fmtDist(f.d)}<br><span>${rumbo(bearing(S.point, f))}</span></span></button>`).join("")
