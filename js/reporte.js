@@ -139,6 +139,14 @@ function dtg(date = new Date()) { // grupo fecha-hora, hora de Venezuela (UTC-4,
   const d = new Date(date.getTime() - 4 * 3600e3), p = n => String(n).padStart(2, "0");
   return `${p(d.getUTCDate())}${p(d.getUTCHours())}${p(d.getUTCMinutes())}Q ${MESES[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}`;
 }
+// Conteo de lo que hay en el radio: edificaciones (todas las mapeadas) y elementos por categoría, en una línea
+function elemSummary(sep = " · ") {
+  const n = c => S.feats.filter(f => f.cat === c).length, pl = (k, one, many) => `${fmtNum(k)} ${k === 1 ? one : many}`;
+  const parts = [S.buildings != null && pl(S.buildings, "edificación", "edificaciones"), pl(n("estructura"), "estructura", "estructuras"), pl(n("servicio"), "servicio", "servicios"),
+    pl(n("puente"), "puente", "puentes"), pl(n("agua"), "río o cuerpo de agua", "ríos o cuerpos de agua"), n("interes") && pl(n("interes"), "lugar de interés", "lugares de interés"),
+    n("naturaleza") && pl(n("naturaleza"), "área natural", "áreas naturales")].filter(Boolean);
+  return parts.join(sep);
+}
 const nearestFeat = pred => S.feats.find(pred) || null; // S.feats ya viene ordenado por distancia
 const where = f => `${fmtDist(f.d)} al ${rumbo(bearing(S.point, f))}`;
 const lvlTag = n => n ? `<span class="lvl" style="background:${REP_LEVEL[n].c}">${REP_LEVEL[n].t}</span>` : `<span class="lvl" style="background:#8a98ab">SIN DATO</span>`;
@@ -255,7 +263,7 @@ function buildReport() {
     tc && `Terreno: <b>${tc[0].toLowerCase()}</b>, altitud ${fmtNum(Math.round(t.e0))} m, pendiente en el punto ${t.slope.toFixed(0)}°. ${esc(transit(t.slope))}.`,
     w && `Tiempo actual: ${esc(wmo(w.current.weather_code)[0].toLowerCase())}, ${Math.round(w.current.temperature_2m)} °C, viento ${Math.round(w.current.wind_speed_10m)} km/h del ${rumbo(w.current.wind_direction_10m)}.`,
     g && (g.roads.length ? `Acceso: ${esc((HW_ES[g.near.t.highway] || "vía").toLowerCase())} a ${fmtDist(g.near.d)}${g.main && g.main !== g.near ? `, carretera a ${fmtDist(g.main.d)}` : ""}.` : "Acceso: sin vías mapeadas en 3 km."),
-    `Elementos en ${fmtDist(S.radius)}: ${["puente", "agua", "estructura", "servicio"].map(c => `${S.feats.filter(f => f.cat === c).length} ${{ puente: "puentes", agua: "ríos/cuerpos de agua", estructura: "estructuras", servicio: "servicios" }[c]}`).join(", ")}.`,
+    !S.errs.feats && `Elementos en ${fmtDist(S.radius)}: ${elemSummary(", ")}.`,
     ...risks.filter(r => r.n >= 2).map(r => `Riesgo ${REP_LEVEL[r.n].t.toLowerCase()}: ${esc(r.k.toLowerCase())}.`),
   ].filter(Boolean);
 
@@ -463,7 +471,7 @@ function buildBrief() {
     w && row("Lluvia 72 h", `${Math.max(...w.daily.precipitation_probability_max.slice(0, 3).map(v => v || 0))} % · ${w.daily.precipitation_sum.slice(0, 3).reduce((a, v) => a + (v || 0), 0).toFixed(0)} mm`),
     w && row("Luz diurna", `${(w.daily.sunrise[0] || "").slice(11, 16)} – ${(w.daily.sunset[0] || "").slice(11, 16)}`),
     g && row("Acceso", g.roads.length ? `${esc(HW_ES[g.near.t.highway] || "vía")}${g.near.t.name || g.near.t.ref ? ` ${esc(g.near.t.name || g.near.t.ref)}` : ""} a ${fmtDist(g.near.d)} ${rumbo(bearing(P, g.near))}` : "Sin vías en 3 km"),
-    row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos de OSM (servidor saturado); el croquis muestra el mapa base" : ["puente", "agua", "estructura", "servicio"].map(c => { const n = S.feats.filter(f => f.cat === c).length; return `${n} ${{ puente: "puente", agua: "agua", estructura: "estructura", servicio: "servicio" }[c]}${n !== 1 && c !== "agua" ? "s" : ""}`; }).join(" · ")),
+    row(`Elementos (${fmtDist(S.radius)})`, S.errs.feats ? "Sin datos de OSM (servidor saturado); el croquis muestra el mapa base" : elemSummary()),
   ].filter(Boolean).join("");
 
   // Hoja 2: datos de apoyo compactos y apreciación
