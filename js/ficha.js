@@ -205,8 +205,10 @@ function renderFeats() {
   const chips = Object.entries(CATS).map(([k, c]) => `<button class="chip" data-cat="${k}" aria-pressed="${!S.hiddenCats.has(k)}" style="--c:var(${c.color})"><i></i>${c.label} <span class="n">${counts[k] || 0}</span></button>`).join("");
   const vis = S.feats.filter(f => !S.hiddenCats.has(f.cat));
   const bld = S.buildings != null ? `<p class="src" style="margin:0 0 6px">${fmtNum(S.buildings)} edificaciones mapeadas en ${fmtDist(S.radius)} (se listan las que tienen nombre o un uso conocido; las viviendas sin nombre solo se cuentan).</p>` : "";
+  const more = S.featsExtra === "loading" ? `<p class="src" style="margin:0 0 6px">Buscando más: túneles, lagunas, poblados, vías férreas y edificaciones con uso…</p>`
+    : S.featsExtra === "error" ? `<p class="src" style="margin:0 0 6px">No se pudieron cargar los elementos adicionales (túneles, poblados, vías férreas…). <button class="copy" data-retry="feats">Reintentar</button></p>` : "";
   const cut = S.featsCut ? `<p class="src" style="margin:0 0 6px;color:var(--c-servicio)">Hay más elementos de los que OpenStreetMap entrega en una consulta: algunos no aparecen. Usa un radio menor para verlos todos.</p>` : "";
-  el.innerHTML = h + bld + cut + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
+  el.innerHTML = h + bld + more + cut + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
     <button class="row" data-feat="${esc(f.id)}" style="--c:var(${CATS[f.cat].color})"><span class="bar"></span>
       <span><b>${esc(f.name || f.type)}</b><span>${esc(f.name ? f.type : CATS[f.cat].label)}${f.parts > 1 ? ` · ${f.parts} tramos` : ""}</span></span>
       <span class="d">${fmtDist(f.d)}<br><span>${rumbo(bearing(S.point, f))}</span></span></button>`).join("")
