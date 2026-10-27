@@ -55,7 +55,7 @@ async function loadTerrain(id) {
 function groundQuery(lat, lon) {
   return `[out:json][timeout:40];
 is_in(${lat},${lon})->.a;
-area.a[~"^(landuse|natural|leisure|boundary)$"~"."]->.b;
+area.a[~"^(landuse|natural|leisure|boundary|water|place|military|aeroway|amenity|man_made|landcover|building)$"~"."]->.b;
 .b out tags;
 (
 way(around:3000,${lat},${lon})["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|track)$"];
@@ -93,7 +93,11 @@ const COVER_ES = {
   plantation: "Plantación", residential: "Zona residencial", commercial: "Zona comercial", retail: "Zona comercial", industrial: "Zona industrial",
   military: "Zona militar", quarry: "Cantera / mina", landfill: "Vertedero", cemetery: "Cementerio", grass: "Áreas verdes", park: "Parque",
   nature_reserve: "Reserva natural", national_park: "Parque nacional", protected_area: "Área protegida", reservoir: "Embalse", basin: "Laguna artificial",
-  recreation_ground: "Área recreativa", cliff: "Farallón", peak: "Cumbre", ridge: "Fila", valley: "Valle", bay: "Bahía", island: "Isla", islet: "Islote",
+  recreation_ground: "Área recreativa", brownfield: "Terreno baldío", construction: "Construcción en curso", greenfield: "Terreno por urbanizar",
+  aquaculture: "Lagunas de cría", salt_pond: "Salina", mud: "Fangal", shoal: "Bajo / banco de arena", reef: "Arrecife", plateau: "Meseta / tepuy",
+  railway: "Zona ferroviaria", port: "Zona portuaria", allotments: "Conucos / huertos", animal_keeping: "Corrales", greenhouse_horticulture: "Invernaderos",
+  religious: "Zona religiosa", education: "Zona educativa", institutional: "Zona institucional", trees: "Arbolado", city: "Ciudad", town: "Pueblo", village: "Pueblo",
+  hamlet: "Caserío", neighbourhood: "Sector", suburb: "Urbanización / parroquia", quarter: "Sector", archipelago: "Archipiélago", aerodrome: "Aeródromo", cliff: "Farallón", peak: "Cumbre", ridge: "Fila", valley: "Valle", bay: "Bahía", island: "Isla", islet: "Islote",
 };
 const HW_ES = {
   motorway: "Autopista", trunk: "Troncal", primary: "Carretera principal", secondary: "Carretera secundaria", tertiary: "Carretera local",
@@ -203,9 +207,10 @@ function renderTerrain() {
   else if (S.errs.ground) ground = errBox("ground", S.errs.ground);
   else if (S.ground) {
     const g = S.ground, seen = new Set(), tags = [];
-    for (const a of g.areas) for (const k of ["boundary", "leisure", "landuse", "natural"]) {
-      const lab = COVER_ES[a[k]]; if (!lab) continue;
-      const txt = a.name && /^(boundary|leisure)$/.test(k) ? `${lab}: ${a.name}` : lab;
+    for (const a of g.areas) for (const k of ["boundary", "leisure", "landuse", "natural", "water", "place", "military", "aeroway", "amenity", "man_made", "landcover", "building"]) {
+      const lab = k === "water" ? WATER_ES[a[k]] : k === "military" ? "Zona militar" : k === "building" ? (a.name ? BLD_ES[a[k]] || "Edificación" : null) : COVER_ES[a[k]] || (/^(aeroway|amenity|man_made)$/.test(k) && TYPE_ES[a[k]]);
+      if (!lab) continue;
+      const txt = a.name && /^(boundary|leisure|water|place|aeroway|amenity|man_made|building|military)$/.test(k) || a.name && ["water", "wetland", "reservoir", "basin"].includes(a[k]) ? `${lab}: ${a.name}` : lab;
       if (!seen.has(txt)) { seen.add(txt); tags.push(txt); }
     }
     ground = `<div class="sub">Cobertura y uso del suelo en el punto</div>${tags.length ? `<div class="tags">${tags.map(x => `<span class="tag">${esc(x)}</span>`).join("")}</div>` : `<p class="src">OpenStreetMap no tiene áreas mapeadas que contengan este punto. Usa la vista Satélite para identificarlo.</p>`}

@@ -199,15 +199,17 @@ function renderFeats() {
   const radios = [250, 500, 1000, 2000, 5000];
   const h = `<h3>Entorno <small>OpenStreetMap</small></h3><div class="ctrl-row"><label for="radius">Radio de análisis</label>
     <select id="radius">${radios.map(r => `<option value="${r}" ${r === S.radius ? "selected" : ""}>${fmtDist(r)}</option>`).join("")}</select></div>`;
-  if (S.busy.feats) { el.innerHTML = h + `<div class="loading">Buscando puentes, ríos, estructuras y naturaleza en ${fmtDist(S.radius)}…</div>`; return; }
+  if (S.busy.feats) { el.innerHTML = h + `<div class="loading">Buscando puentes, agua, edificaciones, estructuras y naturaleza en ${fmtDist(S.radius)}…</div>`; return; }
   if (S.errs.feats) { el.innerHTML = h + errBox("feats", S.errs.feats, S.radius > 1000 ? " Prueba también con un radio menor." : ""); return; }
   const counts = {}; S.feats.forEach(f => counts[f.cat] = (counts[f.cat] || 0) + 1);
   const chips = Object.entries(CATS).map(([k, c]) => `<button class="chip" data-cat="${k}" aria-pressed="${!S.hiddenCats.has(k)}" style="--c:var(${c.color})"><i></i>${c.label} <span class="n">${counts[k] || 0}</span></button>`).join("");
   const vis = S.feats.filter(f => !S.hiddenCats.has(f.cat));
-  const bld = S.buildings != null ? `<p class="src" style="margin:0 0 6px">${fmtNum(S.buildings)} edificaciones mapeadas en ${fmtDist(S.radius)} (se listan las que tienen nombre).</p>` : "";
-  el.innerHTML = h + bld + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
+  const bld = S.buildings != null ? `<p class="src" style="margin:0 0 6px">${fmtNum(S.buildings)} edificaciones mapeadas en ${fmtDist(S.radius)} (se listan las que tienen nombre o un uso conocido; las viviendas sin nombre solo se cuentan).</p>` : "";
+  const cut = S.featsCut ? `<p class="src" style="margin:0 0 6px;color:var(--c-servicio)">Hay más elementos de los que OpenStreetMap entrega en una consulta: algunos no aparecen. Usa un radio menor para verlos todos.</p>` : "";
+  el.innerHTML = h + bld + cut + `<div class="chips">${chips}</div>` + (vis.length ? vis.slice(0, 250).map(f => `
     <button class="row" data-feat="${esc(f.id)}" style="--c:var(${CATS[f.cat].color})"><span class="bar"></span>
       <span><b>${esc(f.name || f.type)}</b><span>${esc(f.name ? f.type : CATS[f.cat].label)}${f.parts > 1 ? ` · ${f.parts} tramos` : ""}</span></span>
       <span class="d">${fmtDist(f.d)}<br><span>${rumbo(bearing(S.point, f))}</span></span></button>`).join("")
+    + (vis.length > 250 ? `<p class="src">… y ${fmtNum(vis.length - 250)} más (todos están en el mapa). Oculta categorías o reduce el radio para verlos en la lista.</p>` : "")
     : `<p class="src">No hay elementos de estas categorías registrados en el radio elegido. Prueba uno mayor.</p>`);
 }
