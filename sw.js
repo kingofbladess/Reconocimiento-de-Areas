@@ -25,7 +25,9 @@ function trimTiles() {
   })().finally(() => { trimming = null; });
 }
 async function cacheFirst(req, name, after) {
-  const hit = await caches.match(req, { ignoreVary: true }); if (hit) return hit;
+  // Las zonas bajadas antes de v3.9.6 guardaron la imagen de Esri sin "?blankTile=false"
+  const hit = await caches.match(req, { ignoreVary: true }) || (req.url.includes("blankTile=") ? await caches.match(req.url.split("?")[0], { ignoreVary: true }) : null);
+  if (hit) return hit;
   const res = await fetch(req);
   if (res.ok) { const c = await caches.open(name); await c.put(req, res.clone()); if (after) after(); }
   return res;

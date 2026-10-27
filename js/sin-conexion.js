@@ -91,9 +91,12 @@ async function downloadZone() {
       try {
         if (!(await cache.match(u))) {
           const r = await fetch(u + (u.includes("?") ? "&" : "?") + "rvzona=1", { mode: "cors", credentials: "omit", signal: ctl.signal });
-          if (!r.ok) throw new Error(r.status);
-          const blob = await r.blob(); zoneJob.bytes += blob.size;
-          await cache.put(u, new Response(blob, { headers: { "Content-Type": r.headers.get("Content-Type") || blob.type || "image/png" } }));
+          // 404: Esri no tiene imagen a ese nivel; el mapa amplía la del nivel anterior, que sí se guarda
+          if (r.status !== 404) {
+            if (!r.ok) throw new Error(r.status);
+            const blob = await r.blob(); zoneJob.bytes += blob.size;
+            await cache.put(u, new Response(blob, { headers: { "Content-Type": r.headers.get("Content-Type") || blob.type || "image/png" } }));
+          }
         }
         zoneJob.done++;
       } catch (_) { if (!ctl.signal.aborted) zoneJob.fail++; }
